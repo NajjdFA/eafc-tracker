@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EA FC — Performance Hub 🏆</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090f;--surface:#0d1117;--surface2:#131924;--surface3:#1a2235;
+  --border:#1e2d45;--accent:#00c8ff;--accent2:#ff6b35;
+  --green:#00e676;--red:#ff1744;--gold:#ffc107;--purple:#b388ff;
+  --whoop:#00c8a0;
+  --text:#e8f0fe;--muted:#5a6a85;--radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 40% at 15% 5%,rgba(0,200,255,.07) 0%,transparent 55%),radial-gradient(ellipse 50% 30% at 85% 90%,rgba(0,200,160,.05) 0%,transparent 55%);pointer-events:none;z-index:0;}
+.app{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:16px 14px 80px;}
+
+/* HEADER */
+.header{text-align:center;padding:28px 10px 18px;}
+.badge{display:inline-block;background:linear-gradient(135deg,rgba(0,200,255,.15),rgba(0,200,255,.04));border:1px solid rgba(0,200,255,.3);color:var(--accent);padding:5px 16px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;}
+.header h1{font-size:clamp(24px,5vw,40px);font-weight:900;background:linear-gradient(135deg,#fff 0%,var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:5px;}
+.header-sub{color:var(--muted);font-size:12px;}
+.countdown{display:flex;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.cd-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 14px;text-align:center;min-width:58px;}
+.cd-num{font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:var(--accent);line-height:1;}
+.cd-lbl{font-size:9px;color:var(--muted);margin-top:2px;letter-spacing:1px;}
+
+/* TABS */
+.tabs{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:4px;margin:14px 0;gap:3px;overflow-x:auto;}
+.tab{flex:1;min-width:60px;padding:9px 6px;border-radius:10px;border:none;cursor:pointer;background:transparent;color:var(--muted);font-family:'Cairo',sans-serif;font-size:12px;font-weight:600;transition:all .2s;white-space:nowrap;}
+.tab.active{background:var(--accent);color:#07090f;}
+.tab:not(.active):hover{background:var(--surface3);color:var(--text);}
+.panel{display:none;}.panel.active{display:block;}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:12px;}
+.card-title{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.card-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent);}
+
+/* WHOOP CONNECT */
+.whoop-connect{background:linear-gradient(135deg,rgba(0,200,160,.12),rgba(0,200,160,.03));border:1px solid rgba(0,200,160,.3);border-radius:var(--radius);padding:24px;text-align:center;margin-bottom:14px;}
+.whoop-logo{font-size:32px;margin-bottom:12px;}
+.whoop-connect h3{font-size:18px;font-weight:700;color:var(--whoop);margin-bottom:8px;}
+.whoop-connect p{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.6;}
+.whoop-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;border-radius:var(--radius);border:none;background:var(--whoop);color:#07090f;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;text-decoration:none;}
+.whoop-btn:hover{opacity:.9;transform:translateY(-1px);}
+.whoop-connected{background:linear-gradient(135deg,rgba(0,230,118,.1),rgba(0,230,118,.03));border:1px solid rgba(0,230,118,.3);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+.whoop-connected-info{display:flex;align-items:center;gap:10px;}
+.whoop-dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);}
+.whoop-refresh-btn{background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:7px 14px;color:var(--text);font-family:'Cairo',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+.whoop-refresh-btn:hover{border-color:var(--accent);}
+
+/* WHOOP METRICS */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px;}
+.metric-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;text-align:center;position:relative;overflow:hidden;}
+.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.metric-card.recovery::before{background:linear-gradient(90deg,var(--green),var(--whoop));}
+.metric-card.sleep::before{background:linear-gradient(90deg,var(--purple),var(--accent));}
+.metric-card.hrv::before{background:linear-gradient(90deg,var(--accent),var(--accent2));}
+.metric-card.rhr::before{background:linear-gradient(90deg,var(--red),var(--accent2));}
+.metric-card.spo2::before{background:linear-gradient(90deg,var(--accent2),var(--gold));}
+.metric-card.strain::before{background:linear-gradient(90deg,var(--gold),var(--accent2));}
+.metric-val{font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;line-height:1;margin:6px 0 4px;}
+.metric-lbl{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase;}
+.metric-sub{font-size:10px;color:var(--muted);margin-top:3px;}
+.metric-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;margin-top:5px;}
+.badge-green{background:rgba(0,230,118,.15);color:var(--green);}
+.badge-gold{background:rgba(255,193,7,.15);color:var(--gold);}
+.badge-red{background:rgba(255,23,68,.12);color:var(--red);}
+
+/* ANALYSIS */
+.analysis-box{background:var(--surface2);border-radius:var(--radius);padding:16px;margin-bottom:12px;border-left:3px solid var(--accent);}
+.analysis-box.warning{border-left-color:var(--gold);}
+.analysis-box.danger{border-left-color:var(--red);}
+.analysis-box.good{border-left-color:var(--green);}
+.analysis-title{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+.analysis-text{font-size:12px;color:var(--muted);line-height:1.7;}
+.analysis-text strong{color:var(--text);}
+
+/* TREND CHART */
+.trend-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
+.trend-title{font-size:10px;color:var(--muted);margin-bottom:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;}
+.trend-chart{display:flex;align-items:flex-end;gap:3px;height:70px;}
+.trend-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.trend-bar-outer{width:100%;background:var(--surface3);border-radius:4px;flex:1;display:flex;align-items:flex-end;overflow:hidden;}
+.trend-bar-inner{width:100%;border-radius:4px;transition:height .4s ease;}
+.trend-lbl{font-size:7px;color:var(--muted);white-space:nowrap;}
+.trend-val{font-size:7px;font-weight:700;}
+
+/* DATE GRID */
+.date-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:5px;margin-bottom:14px;}
+.date-btn{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:7px 4px;text-align:center;cursor:pointer;transition:all .15s;position:relative;}
+.date-btn:hover{border-color:var(--accent);}
+.date-btn.selected{background:var(--accent);border-color:var(--accent);color:#07090f;}
+.date-btn.has-data::after{content:'';position:absolute;top:3px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--green);}
+.date-btn.selected.has-data::after{background:#07090f;}
+.date-btn.today{border-color:var(--gold);}
+.date-btn.special{border-color:var(--purple);}
+.date-day{font-size:9px;opacity:.7;}
+.date-num{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;line-height:1.1;}
+.date-month{font-size:8px;opacity:.6;}
+
+/* SCHEDULE */
+.phase-label{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;margin-bottom:12px;}
+.phase-post{background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3);color:var(--green);}
+.phase-special{background:rgba(179,136,255,.12);border:1px solid rgba(179,136,255,.3);color:var(--purple);}
+.phase-finals{background:rgba(255,107,53,.15);border:1px solid rgba(255,107,53,.4);color:var(--accent2);}
+.phase-tournament{background:rgba(0,200,255,.15);border:1px solid rgba(0,200,255,.4);color:var(--accent);}
+.special-notice{background:rgba(179,136,255,.08);border:1px solid rgba(179,136,255,.3);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:12px;}
+.special-notice .sn-title{font-weight:700;color:var(--purple);margin-bottom:4px;}
+.special-notice .sn-item{color:var(--text);font-size:11px;margin-top:3px;opacity:.85;}
+.schedule-list{display:flex;flex-direction:column;gap:5px;}
+.sched-item{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;cursor:pointer;transition:all .15s;user-select:none;}
+.sched-item.done{border-color:rgba(0,230,118,.3);background:rgba(0,230,118,.04);}
+.sched-item.skipped{border-color:rgba(255,23,68,.2);opacity:.5;}
+.sched-item.optional{border-style:dashed;opacity:.75;}
+.sched-time{font-family:'Rajdhani',sans-serif;font-size:12px;color:var(--muted);min-width:95px;}
+.sched-name{flex:1;font-size:13px;font-weight:600;}
+.sched-note{font-size:10px;color:var(--muted);}
+.sched-check{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;}
+.sched-item.done .sched-check{background:var(--green);border-color:var(--green);color:#07090f;}
+.sched-item.skipped .sched-check{background:rgba(255,23,68,.2);border-color:var(--red);color:var(--red);}
+
+/* GAMES */
+.games-row{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap;}
+.games-label{font-size:13px;min-width:90px;}
+.counter{display:flex;align-items:center;background:var(--surface3);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.counter-btn{width:34px;height:34px;border:none;background:transparent;color:var(--text);font-size:18px;cursor:pointer;font-weight:700;}
+.counter-btn:hover{background:var(--border);}
+.counter-val{min-width:42px;text-align:center;font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--accent);}
+.win-rate-bar{background:var(--surface3);border-radius:20px;height:7px;overflow:hidden;margin:6px 0;}
+.win-rate-fill{height:100%;border-radius:20px;transition:width .4s ease;}
+.session-notes{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;resize:vertical;min-height:65px;margin-top:8px;}
+.session-notes:focus{outline:none;border-color:var(--accent);}
+.session-notes::placeholder{color:var(--muted);}
+.mood-row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;}
+.mood-btn{background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:5px 12px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:12px;transition:all .15s;}
+.mood-btn.active{border-color:var(--accent);background:rgba(0,200,255,.1);color:var(--accent);}
+.save-btn{width:100%;padding:13px;border-radius:var(--radius);border:none;background:linear-gradient(135deg,var(--accent),#0088bb);color:#07090f;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:12px;}
+.save-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,200,255,.25);}
+
+/* SYNC */
+.sync-section{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:12px;}
+.sync-title{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--accent2);text-transform:uppercase;margin-bottom:12px;}
+.sync-code-display{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;text-align:center;letter-spacing:4px;color:var(--gold);margin-bottom:10px;min-height:52px;display:flex;align-items:center;justify-content:center;}
+.sync-btn{width:100%;padding:10px;border-radius:10px;border:none;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;transition:all .15s;margin-bottom:6px;background:linear-gradient(135deg,var(--accent2),#cc4400);color:#fff;}
+.sync-btn:hover{opacity:.9;}
+.sync-hint{font-size:11px;color:var(--muted);text-align:center;}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px;}
+.stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;text-align:center;}
+.stat-val{font-family:'Rajdhani',sans-serif;font-size:30px;font-weight:700;line-height:1;}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:3px;}
+.streak-display{display:flex;justify-content:center;gap:5px;flex-wrap:wrap;margin:8px 0;}
+.streak-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;}
+.streak-dot.win{background:rgba(0,230,118,.2);border:1.5px solid var(--green);color:var(--green);}
+.streak-dot.loss{background:rgba(255,23,68,.1);border:1.5px solid rgba(255,23,68,.4);color:var(--red);}
+.streak-dot.empty{background:var(--surface3);border:1.5px solid var(--border);color:var(--muted);}
+
+/* COACH */
+.coach-header{background:linear-gradient(135deg,rgba(255,107,53,.15),rgba(255,107,53,.05));border:1px solid rgba(255,107,53,.3);border-radius:var(--radius);padding:16px;margin-bottom:14px;text-align:center;}
+.coach-header h2{font-size:18px;font-weight:700;color:var(--accent2);margin-bottom:4px;}
+.coach-header p{font-size:12px;color:var(--muted);}
+.code-input-row{display:flex;gap:8px;margin-bottom:14px;}
+.code-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:18px;text-align:center;letter-spacing:3px;}
+.code-input:focus{outline:none;border-color:var(--accent2);}
+.code-input::placeholder{font-size:11px;letter-spacing:1px;font-family:'Cairo',sans-serif;}
+.load-btn{padding:10px 18px;border-radius:10px;border:none;background:var(--accent2);color:#fff;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
+.coach-day-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.coach-day-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;}
+.coach-day-date{font-size:12px;font-weight:700;}
+.coach-day-wr{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;}
+.coach-whoop-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.coach-whoop-badge{background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;display:flex;align-items:center;gap:5px;}
+.coach-day-note{font-size:11px;color:var(--muted);margin-top:6px;font-style:italic;}
+
+/* WEEK */
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.week-day{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 4px;text-align:center;}
+.week-day.today{border-color:var(--gold);}
+.week-day-name{font-size:8px;color:var(--muted);margin-bottom:3px;}
+.week-day-wr{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;}
+.week-day-rec{font-size:8px;color:var(--whoop);margin-top:2px;}
+.week-day.empty{opacity:.3;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--green);color:#07090f;padding:10px 24px;border-radius:30px;font-weight:700;font-size:13px;z-index:100;transition:transform .3s ease;pointer-events:none;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.loading{text-align:center;padding:30px;color:var(--muted);font-size:13px;}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-right:8px;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:480px){
+  .date-grid{grid-template-columns:repeat(auto-fill,minmax(52px,1fr));}
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .week-grid{grid-template-columns:repeat(4,1fr);}
+  .metrics-grid{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="badge">🏆 EA FC — Performance Hub</div>
+    <h1>Tournament Dashboard</h1>
+    <div class="header-sub">Mar 21 — Apr 8, 2026 · Riyadh</div>
+    <div class="countdown" id="countdown"></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('daily')">📅 Daily</button>
+    <button class="tab" onclick="switchTab('whoop')">💚 Whoop</button>
+    <button class="tab" onclick="switchTab('stats')">📊 Stats</button>
+    <button class="tab" onclick="switchTab('week')">📆 Week</button>
+    <button class="tab" onclick="switchTab('coach')">👁 Coach</button>
+  </div>
+
+  <!-- ═══ DAILY ═══ -->
+  <div class="panel active" id="panel-daily">
+    <div class="card">
+      <div class="card-title">📅 Select Day</div>
+      <div class="date-grid" id="dateGrid"></div>
+    </div>
+    <div id="whoopTodayStrip"></div>
+    <div class="card">
+      <div class="card-title">🗓 Daily Schedule</div>
+      <div id="phaseLabel"></div>
+      <div id="specialNotice"></div>
+      <div class="schedule-list" id="scheduleList"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🎮 Gaming Sessions</div>
+      <div class="games-row">
+        <span class="games-label">Games Played</span>
+        <div class="counter">
+          <button class="counter-btn" onclick="changeCount('played',-1)">−</button>
+          <div class="counter-val" id="val-played">0</div>
+          <button class="counter-btn" onclick="changeCount('played',1)">+</button>
+        </div>
+      </div>
+      <div class="games-row">
+        <span class="games-label">Wins</span>
+        <div class="counter">
+          <button class="counter-btn" onclick="changeCount('wins',-1)">−</button>
+          <div class="counter-val" id="val-wins">0</div>
+          <button class="counter-btn" onclick="changeCount('wins',1)">+</button>
+        </div>
+        <span id="winRateText" style="font-family:'Rajdhani',sans-serif;font-size:18px;color:var(--green);font-weight:700;margin-left:8px;">—</span>
+      </div>
+      <div class="win-rate-bar"><div class="win-rate-fill" id="winRateBar" style="width:0%"></div></div>
+      <div style="margin-top:12px;">
+        <div class="card-title" style="margin-bottom:8px;">🧠 Mental State</div>
+        <div class="mood-row" id="moodRow">
+          <button class="mood-btn" onclick="setMood('🔥 Peak')">🔥 Peak</button>
+          <button class="mood-btn" onclick="setMood('😤 Focused')">😤 Focused</button>
+          <button class="mood-btn" onclick="setMood('😐 Average')">😐 Average</button>
+          <button class="mood-btn" onclick="setMood('😩 Tired')">😩 Tired</button>
+          <button class="mood-btn" onclick="setMood('😡 Tilted')">😡 Tilted</button>
+        </div>
+      </div>
+      <textarea class="session-notes" id="sessionNotes" placeholder="Session notes — what did you notice about your performance today?"></textarea>
+      <button class="save-btn" onclick="saveDay()">💾 Save Day</button>
+    </div>
+    <div class="sync-section">
+      <div class="sync-title">📤 Share with Coach</div>
+      <div class="sync-code-display" id="syncCodeDisplay">— — — —</div>
+      <button class="sync-btn" onclick="generateSyncCode()">🔄 Generate Sync Code</button>
+      <p class="sync-hint">Generate code → Send to coach → They enter it in Coach tab</p>
+    </div>
+  </div>
+
+  <!-- ═══ WHOOP ═══ -->
+  <div class="panel" id="panel-whoop">
+    <div id="whoopConnectSection"></div>
+    <div id="whoopDataSection" style="display:none">
+      <div id="whoopConnectedBar"></div>
+      <div class="card">
+        <div class="card-title">💚 Today's Whoop Data</div>
+        <div class="metrics-grid" id="metricsGrid">
+          <div class="loading"><span class="spinner"></span>Loading...</div>
+        </div>
+      </div>
+      <div id="analysisSection"></div>
+      <div class="trend-wrap">
+        <div class="trend-title">
+          <span>Recovery Trend (14 days)</span>
+          <span style="color:var(--whoop);font-size:10px" id="trendDateRange"></span>
+        </div>
+        <div class="trend-chart" id="recoveryTrend"></div>
+      </div>
+      <div class="trend-wrap">
+        <div class="trend-title">Sleep Quality Trend</div>
+        <div class="trend-chart" id="sleepTrend"></div>
+      </div>
+      <div class="trend-wrap">
+        <div class="trend-title">HRV Trend</div>
+        <div class="trend-chart" id="hrvTrend"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ STATS ═══ -->
+  <div class="panel" id="panel-stats">
+    <div class="card">
+      <div class="card-title">📈 Performance Stats</div>
+      <div class="stats-grid" id="statsGrid"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔥 Last 10 Results</div>
+      <div class="streak-display" id="streakDisplay"></div>
+    </div>
+    <div class="trend-wrap">
+      <div class="trend-title">Daily Win Rate</div>
+      <div class="trend-chart" id="barChart"></div>
+    </div>
+    <div id="bestDayWrap"></div>
+    <div class="card">
+      <div class="card-title">📋 Schedule Adherence</div>
+      <div id="adherenceStats"></div>
+    </div>
+  </div>
+
+  <!-- ═══ WEEK ═══ -->
+  <div class="panel" id="panel-week">
+    <div class="card">
+      <div class="card-title">📆 This Week</div>
+      <div class="week-grid" id="weekGrid"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Weekly Summary</div>
+      <div id="weekSummary"></div>
+    </div>
+  </div>
+
+  <!-- ═══ COACH ═══ -->
+  <div class="panel" id="panel-coach">
+    <div class="coach-header">
+      <h2>👁 Coach Dashboard</h2>
+      <p>Enter player's sync code to view full stats + Whoop biometrics</p>
+    </div>
+    <div class="card">
+      <div class="card-title">🔑 Enter Sync Code</div>
+      <div class="code-input-row">
+        <input class="code-input" id="coachCodeInput" placeholder="Enter code from player" maxlength="20">
+        <button class="load-btn" onclick="loadCoachData()">Load →</button>
+      </div>
+      <div id="coachContent">
+        <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">Enter sync code to view player data</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div class="toast" id="toast">✅ Saved!</div>
+
+<script>
+// ══════════════════════════════════════
+// CONSTANTS & CONFIG
+// ══════════════════════════════════════
+const TOURNAMENT_DATE = new Date('2026-04-08');
+const START_DATE      = new Date('2026-03-21');
+const DAY_EN  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MON_EN  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MON_FULL= ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function dateKey(d){ return d.toISOString().slice(0,10); }
+function parseDate(k){ const [y,m,d]=k.split('-').map(Number); return new Date(y,m-1,d); }
+function today(){ const n=new Date(); return new Date(n.getFullYear(),n.getMonth(),n.getDate()); }
+
+// ── WHOOP DATA CACHE ──
+let whoopCache = null;
+let whoopLoaded = false;
+
+// ── GAME STATE ──
+let state = JSON.parse(localStorage.getItem('eafc_tracker_v4') || '{}');
+let selectedDate = dateKey(today()) >= dateKey(START_DATE) ? dateKey(today()) : dateKey(START_DATE);
+if(parseDate(selectedDate) > TOURNAMENT_DATE) selectedDate = dateKey(START_DATE);
+let currentPlayed=0, currentWins=0, currentMood='', currentChecks={};
+
+function saveState(){ localStorage.setItem('eafc_tracker_v4', JSON.stringify(state)); }
+
+// ── SCHEDULES ──
+function getPhase(d){
+  const t=d.getTime();
+  if(t<=new Date('2026-03-31').getTime()) return 'post';
+  if(t<=new Date('2026-04-07').getTime()) return 'finals';
+  if(t<=new Date('2026-04-08').getTime()) return 'tournament';
+  return 'after';
+}
+
+const SPECIAL_DATES = {
+  '2026-03-21':{notice:{title:'⚽ Chelsea vs Everton',items:['Normal schedule','Session 2: 6:30–9:00 PM','💡 Can leave early if finished (optional)']},overrides:{session2:{time:'6:30–9:00 PM',name:'🎮 Session 2 (Twisted)',note:'BO3 · Can finish early ✓'}}},
+  '2026-03-22':{notice:{title:'⚽ BIG MATCH DAY 🔥',items:['Arsenal vs Man City — 7:30 PM','Real Madrid vs Atlético — 11:00 PM','Session 2 moved to 4:00–6:00 PM','Gathering extends to 12:30 AM (exception)']},overrides:{session2:{time:'4:00–6:00 PM',name:'🎮 Session 2 (Twisted)',note:'Moved earlier for the match'},friends:{time:'7:15 PM',name:'🤝 Gathering + ⚽ Arsenal vs City',note:'Extends to 12:30 AM (exception tonight)'},sleep:{time:'12:30 AM',name:'😴 Sleep',note:'Exception — back to normal tomorrow'}}},
+  '2026-03-26':{notice:{title:'⚽ Saudi + Brazil Match Day',items:['Saudi Arabia vs Egypt — 6:00 PM','Brazil vs France — 11:00 PM (optional)','Session 2 moved to afternoon','Sleep max 12:30–1:00 AM']},overrides:{session2:{time:'2:30–5:00 PM',name:'🎮 Session 2 (Twisted)',note:'Moved earlier — match at 6:00 PM'},friends:{time:'6:00 PM',name:'🤝 Gathering + ⚽ Saudi vs Egypt',note:'Light gathering'},latematch:{time:'11:00 PM',name:'📺 Brazil vs France (optional)',note:'',optional:true},sleep:{time:'12:30–1:00 AM',name:'😴 Sleep',note:'Max 1:00 AM ⚠️'}}},
+  '2026-04-01':{notice:{title:'🏟 EAFC Tournament Day 1',items:['No Session 2','4:30–8:30 PM: Attend tournament','Light session 10:00–11:30 PM','Watch · Analyze · Prepare']},special_finals:true},
+  '2026-04-02':{notice:{title:'🏟 EAFC Tournament Day 2',items:['No Session 2','4:30–8:30 PM: Tournament','Light session 10:00–11:30 PM']},special_finals:true},
+  '2026-04-03':{notice:{title:'🏟 EAFC Tournament Day 3',items:['No Session 2','4:30–8:30 PM: Tournament','Light session 10:00–11:30 PM']},special_finals:true},
+  '2026-04-04':{notice:{title:'🏟 EAFC Tournament Day 4',items:['No Session 2','4:30–8:30 PM: Tournament','Light session 10:00–11:30 PM']},special_finals:true},
+};
+
+const BASE_POST=[
+  {time:'9:00 AM',name:'⏰ Wake Up',note:'Hydration + light movement'},
+  {time:'9:30 AM',name:'🍳 Breakfast',note:'Protein + light carbs'},
+  {time:'9:45–10:05 AM',name:'🚶 Walk 20 min',note:'Daily — skip only if priority event 5:45–6:05 PM'},
+  {time:'Flexible',name:'💼 Work (1.5 hrs)',note:'After breakfast / after Session 1 / during gathering (max 30 min)'},
+  {time:'11:30 AM–2:00 PM',name:'🎮 Session 1 (Home)',note:'Mechanics + Ranked'},
+  {time:'2:30 PM',name:'🥗 Lunch',note:'Light meal'},
+  {time:'3:30–4:30 PM',name:'😴 Rest',note:'Optional nap'},
+  {time:'5:45–6:05 PM',name:'🚶 Walk (alt time)',note:'Priority slot — replaces morning walk if needed'},
+  {time:'6:30–9:00 PM',name:'🎮 Session 2 (Twisted)',note:'BO3 Simulation'},
+  {time:'9:00–9:20 PM',name:'🧘 Reset',note:'No screens'},
+  {time:'9:30–11:30 PM',name:'🤝 Friends Gathering',note:'Social recovery (home)'},
+  {time:'12:30 AM',name:'😴 Sleep',note:'Fixed schedule'},
+];
+const BASE_FINALS=[
+  {time:'8:00 AM',name:'⏰ Wake Up',note:''},
+  {time:'8:30 AM',name:'🍳 Breakfast',note:''},
+  {time:'8:50–9:10 AM',name:'🚶 Walk 20 min',note:'Daily'},
+  {time:'Flexible',name:'💼 Work (1.5 hrs)',note:'Never affects training or sleep'},
+  {time:'9:30–10:30 AM',name:'🎮 Warmup — 1 hr only',note:'Warmup, not fatigue'},
+  {time:'3:00–4:00 PM',name:'🎮 Session 2 — 1 hr only',note:'Strengths only'},
+  {time:'4:00–9:00 PM',name:'🤝 Friends Gathering',note:'Full mental recharge ✅'},
+  {time:'11:30 PM',name:'😴 Sleep — fixed',note:''},
+];
+const BASE_FINALS_SPECIAL=[
+  {time:'8:00 AM',name:'⏰ Wake Up',note:''},
+  {time:'8:30 AM',name:'🍳 Breakfast',note:''},
+  {time:'8:50–9:10 AM',name:'🚶 Walk 20 min',note:''},
+  {time:'Flexible',name:'💼 Work (1.5 hrs)',note:'Flexible'},
+  {time:'9:30–11:00 AM',name:'🎮 Session 1 (Home)',note:'Ranked warm-up'},
+  {time:'4:30–8:30 PM',name:'🏟 EAFC Tournament — ATTEND',note:'Watch · Analyze · Prepare 🔥'},
+  {time:'10:00–11:30 PM',name:'🎮 Light Session',note:'Process what you saw'},
+  {time:'12:00 AM',name:'😴 Sleep',note:''},
+];
+const BASE_TOURNAMENT=[
+  {time:'8:00 AM',name:'⏰ Wake Up',note:'Natural wake-up'},
+  {time:'8:30 AM',name:'🍳 Breakfast + ☕ First coffee',note:'Fixed routine'},
+  {time:'9:00–9:20 AM',name:'🚶 Light walk 20 min',note:'Activate, don\'t exhaust'},
+  {time:'10:00–11:00 AM',name:'🎮 Warmup — 3 games only',note:'Neural warmup'},
+  {time:'12:30–1:00 PM',name:'🥗 Light lunch',note:'Grilled chicken/kebab + salad'},
+  {time:'2:30 PM',name:'☕ Half cup — proven formula',note:'90 min before match ✅'},
+  {time:'3:00 PM',name:'🚗 Head to venue',note:'Arrive 1 hour before'},
+  {time:'4:00 PM',name:'🏆 TOURNAMENT STARTS',note:'Body ready — confidence locked 🔒'},
+];
+
+function getSchedule(dateStr){
+  const d=parseDate(dateStr), phase=getPhase(d), sp=SPECIAL_DATES[dateStr];
+  if(phase==='tournament') return BASE_TOURNAMENT;
+  if(phase==='after') return [];
+  if(sp&&sp.special_finals) return BASE_FINALS_SPECIAL;
+  const base = phase==='finals' ? [...BASE_FINALS] : [...BASE_POST];
+  if(sp&&sp.overrides){
+    const ov=sp.overrides;
+    if(ov.session2){const i=base.findIndex(s=>s.name.includes('Session 2'));if(i>=0)base[i]={...base[i],...ov.session2};}
+    if(ov.friends){const i=base.findIndex(s=>s.name.includes('Gathering'));if(i>=0)base[i]={...base[i],...ov.friends};else base.push(ov.friends);}
+    if(ov.latematch) base.push({...ov.latematch,optional:true});
+    if(ov.sleep){const i=base.findIndex(s=>s.name.includes('Sleep'));if(i>=0)base[i]={...base[i],...ov.sleep};}
+  }
+  return base;
+}
+
+const PHASE_LABELS={post:{icon:'⚡',text:'Build Phase',cls:'phase-post'},finals:{icon:'🔥',text:'Tournament Week',cls:'phase-finals'},tournament:{icon:'🏆',text:'Tournament Day',cls:'phase-tournament'}};
+
+// ── COUNTDOWN ──
+function renderCountdown(){
+  const diff=TOURNAMENT_DATE-new Date();
+  if(diff<=0){document.getElementById('countdown').innerHTML='<div class="cd-item"><div class="cd-num" style="color:var(--gold)">🏆</div><div class="cd-lbl">DONE</div></div>';return;}
+  const days=Math.floor(diff/86400000),hrs=Math.floor((diff%86400000)/3600000),mins=Math.floor((diff%3600000)/60000);
+  document.getElementById('countdown').innerHTML=`<div class="cd-item"><div class="cd-num">${days}</div><div class="cd-lbl">DAYS</div></div><div class="cd-item"><div class="cd-num">${hrs}</div><div class="cd-lbl">HRS</div></div><div class="cd-item"><div class="cd-num">${mins}</div><div class="cd-lbl">MIN</div></div><div class="cd-item" style="border-color:rgba(255,193,7,.3)"><div class="cd-num" style="color:var(--gold);font-size:14px;padding-top:6px">Apr 8</div><div class="cd-lbl">TARGET</div></div>`;
+}
+
+// ── DATE GRID ──
+function renderDateGrid(){
+  const grid=document.getElementById('dateGrid'); grid.innerHTML='';
+  let d=new Date(START_DATE);
+  while(d<=TOURNAMENT_DATE){
+    const key=dateKey(d);
+    let cls='date-btn';
+    if(key===selectedDate) cls+=' selected';
+    if(dateKey(d)===dateKey(today())) cls+=' today';
+    if(state[key]&&(state[key].played>0||state[key].checks)) cls+=' has-data';
+    if(SPECIAL_DATES[key]) cls+=' special';
+    const btn=document.createElement('div'); btn.className=cls;
+    btn.innerHTML=`<div class="date-day">${DAY_EN[d.getDay()]}</div><div class="date-num">${d.getDate()}</div><div class="date-month">${MON_EN[d.getMonth()]}</div>`;
+    btn.onclick=()=>selectDate(key); grid.appendChild(btn);
+    d=new Date(d.getTime()+86400000);
+  }
+}
+
+function selectDate(key){ selectedDate=key; loadDayState(key); renderDateGrid(); renderWhoopStrip(); }
+
+// ── SCHEDULE ──
+function renderSchedule(){
+  const d=parseDate(selectedDate), phase=getPhase(d), ph=PHASE_LABELS[phase];
+  document.getElementById('phaseLabel').innerHTML=ph?`<div class="phase-label ${ph.cls}">${ph.icon} ${ph.text}</div>`:'';
+  const sp=SPECIAL_DATES[selectedDate];
+  document.getElementById('specialNotice').innerHTML=sp&&sp.notice?`<div class="special-notice"><div class="sn-title">📌 ${sp.notice.title}</div>${sp.notice.items.map(i=>`<div class="sn-item">• ${i}</div>`).join('')}</div>`:'';
+  const sched=getSchedule(selectedDate), list=document.getElementById('scheduleList'); list.innerHTML='';
+  if(!sched.length){list.innerHTML='<p style="color:var(--muted);text-align:center;padding:20px;">Tournament complete 🏆</p>';return;}
+  sched.forEach((item,i)=>{
+    const status=currentChecks[i]||'none';
+    let cls='sched-item'; if(status==='done')cls+=' done'; if(status==='skipped')cls+=' skipped'; if(item.optional)cls+=' optional';
+    const div=document.createElement('div'); div.className=cls;
+    div.innerHTML=`<div class="sched-check">${status==='done'?'✓':status==='skipped'?'✕':''}</div><div style="flex:1"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="sched-time">${item.time}</span><span class="sched-name">${item.name}${item.optional?' <span style="font-size:9px;color:var(--muted)">(optional)</span>':''}</span></div>${item.note?`<div class="sched-note">${item.note}</div>`:''}</div>`;
+    div.onclick=()=>{const c=currentChecks[i]||'none';currentChecks[i]=c==='none'?'done':c==='done'?'skipped':'none';renderSchedule();};
+    list.appendChild(div);
+  });
+}
+
+// ── WHOOP ──
+async function fetchWhoopData(){
+  try{
+    const resp = await fetch('/.netlify/functions/whoop-data?days=14');
+    if(resp.status===401) return null;
+    if(!resp.ok) return null;
+    const data = await resp.json();
+    whoopCache = data;
+    whoopLoaded = true;
+    return data;
+  }catch(e){ return null; }
+}
+
+function recoveryColor(score){
+  if(!score) return 'var(--muted)';
+  if(score>=67) return 'var(--green)';
+  if(score>=34) return 'var(--gold)';
+  return 'var(--red)';
+}
+function recoveryLabel(score){
+  if(!score) return '';
+  if(score>=67) return '<span class="metric-badge badge-green">GREEN</span>';
+  if(score>=34) return '<span class="metric-badge badge-gold">YELLOW</span>';
+  return '<span class="metric-badge badge-red">RED</span>';
+}
+function sleepLabel(eff){
+  if(!eff) return '';
+  if(eff>=85) return '<span class="metric-badge badge-green">OPTIMAL</span>';
+  if(eff>=70) return '<span class="metric-badge badge-gold">FAIR</span>';
+  return '<span class="metric-badge badge-red">POOR</span>';
+}
+
+function renderWhoopSection(data){
+  document.getElementById('whoopConnectSection').style.display='none';
+  document.getElementById('whoopDataSection').style.display='block';
+
+  const profile = data.profile || {};
+  document.getElementById('whoopConnectedBar').innerHTML=`
+    <div class="whoop-connected">
+      <div class="whoop-connected-info">
+        <div class="whoop-dot"></div>
+        <span style="font-weight:700;color:var(--whoop)">Whoop Connected${profile.first_name?' — '+profile.first_name:''}</span>
+      </div>
+      <button class="whoop-refresh-btn" onclick="refreshWhoopData()">🔄 Refresh</button>
+    </div>`;
+
+  // Get today's data
+  const todayKey = dateKey(today());
+  const todayData = data.data[todayKey] || {};
+  const rec = todayData.recovery || {};
+  const slp = todayData.sleep || {};
+  const str = todayData.strain || {};
+
+  document.getElementById('metricsGrid').innerHTML=`
+    <div class="metric-card recovery">
+      <div class="metric-lbl">Recovery</div>
+      <div class="metric-val" style="color:${recoveryColor(rec.score)}">${rec.score!=null?Math.round(rec.score)+'%':'—'}</div>
+      ${recoveryLabel(rec.score)}
+    </div>
+    <div class="metric-card sleep">
+      <div class="metric-lbl">Sleep Quality</div>
+      <div class="metric-val" style="color:${slp.efficiency>=85?'var(--green)':slp.efficiency>=70?'var(--gold)':'var(--muted)'}">${slp.quality_score!=null?Math.round(slp.quality_score)+'%':'—'}</div>
+      ${sleepLabel(slp.efficiency)}
+    </div>
+    <div class="metric-card hrv">
+      <div class="metric-lbl">HRV (ms)</div>
+      <div class="metric-val" style="color:var(--accent)">${rec.hrv!=null?Math.round(rec.hrv):'—'}</div>
+      <div class="metric-sub">Heart Rate Variability</div>
+    </div>
+    <div class="metric-card rhr">
+      <div class="metric-lbl">Resting HR</div>
+      <div class="metric-val" style="color:var(--accent2)">${rec.rhr!=null?Math.round(rec.rhr)+' bpm':'—'}</div>
+    </div>
+    <div class="metric-card spo2">
+      <div class="metric-lbl">SpO2</div>
+      <div class="metric-val" style="color:${rec.spo2>=95?'var(--green)':'var(--gold)'}">${rec.spo2!=null?rec.spo2.toFixed(1)+'%':'—'}</div>
+      <div class="metric-sub">Blood Oxygen</div>
+    </div>
+    <div class="metric-card strain">
+      <div class="metric-lbl">Sleep Hours</div>
+      <div class="metric-val" style="color:${slp.actual_hours>=7?'var(--green)':slp.actual_hours>=5?'var(--gold)':'var(--red)'}">${slp.actual_hours!=null?slp.actual_hours+'h':'—'}</div>
+      <div class="metric-sub">Deep: ${slp.deep_pct!=null?slp.deep_pct+'%':'—'} | REM: ${slp.rem_pct!=null?slp.rem_pct+'%':'—'}</div>
+    </div>`;
+
+  // Analysis
+  renderWhoopAnalysis(rec, slp, str);
+
+  // Trends
+  renderTrend('recoveryTrend', data.data, d => d.recovery?.score, 'var(--whoop)', 'var(--gold)', 'var(--red)', 67, 34);
+  renderTrend('sleepTrend', data.data, d => d.sleep?.quality_score, 'var(--purple)', 'var(--gold)', 'var(--red)', 85, 70);
+  renderTrend('hrvTrend', data.data, d => d.recovery?.hrv ? Math.round(d.recovery.hrv) : null, 'var(--accent)', 'var(--accent)', 'var(--muted)', 999, 0);
+}
+
+function renderWhoopAnalysis(rec, slp, str){
+  const section = document.getElementById('analysisSection');
+  const boxes = [];
+
+  // Recovery analysis
+  if(rec.score!=null){
+    if(rec.score>=67){
+      boxes.push({type:'good',icon:'✅',title:'Green Recovery — Ready to Perform',text:`Recovery at <strong>${Math.round(rec.score)}%</strong>. Body is primed for high-intensity gaming. <strong>Full session load is optimal today.</strong>`});
+    } else if(rec.score>=34){
+      boxes.push({type:'warning',icon:'⚠️',title:'Yellow Recovery — Moderate Load',text:`Recovery at <strong>${Math.round(rec.score)}%</strong>. Reduce session length by 20%. Focus on quality over quantity. <strong>Consider skipping the 3rd optional session.</strong>`});
+    } else {
+      boxes.push({type:'danger',icon:'🔴',title:'Red Recovery — Rest Day Recommended',text:`Recovery at <strong>${Math.round(rec.score)}%</strong>. Playing while red can worsen performance and reaction time. <strong>Do only Session 1 today — no second session.</strong>`});
+    }
+  }
+
+  // HRV analysis
+  if(rec.hrv!=null){
+    const hrv = Math.round(rec.hrv);
+    if(hrv < 40){
+      boxes.push({type:'warning',icon:'💓',title:'Low HRV — Nervous System Alert',text:`HRV at <strong>${hrv}ms</strong> is below optimal. This directly affects <strong>reaction time and decision-making speed</strong>. Prioritize sleep tonight and avoid late sessions.`});
+    }
+  }
+
+  // Sleep analysis
+  if(slp.actual_hours!=null){
+    if(slp.actual_hours < 6){
+      boxes.push({type:'danger',icon:'😴',title:'Sleep Debt Detected',text:`Only <strong>${slp.actual_hours}hrs</strong> of sleep. Reaction time can be up to <strong>20-30% slower</strong> with this level. Deep sleep: ${slp.deep_pct||'—'}%. Consider a 20-min nap before Session 1.`});
+    } else if(slp.deep_pct!=null && slp.deep_pct < 15){
+      boxes.push({type:'warning',icon:'🧠',title:'Low Deep Sleep',text:`Deep sleep at <strong>${slp.deep_pct}%</strong> (target: 15-25%). This affects <strong>muscle memory and pattern recognition</strong> in gaming. Avoid screens 30 min before bed tonight.`});
+    }
+  }
+
+  // SpO2
+  if(rec.spo2!=null && rec.spo2 < 95){
+    boxes.push({type:'warning',icon:'🩸',title:'Low Blood Oxygen',text:`SpO2 at <strong>${rec.spo2.toFixed(1)}%</strong>. This can cause mental fog. Make sure the room is ventilated during gaming sessions today.`});
+  }
+
+  if(!boxes.length){
+    boxes.push({type:'good',icon:'🟢',title:'All Systems Go',text:'Biometrics look solid. No performance flags today. Proceed with full training schedule.'});
+  }
+
+  section.innerHTML = boxes.map(b=>`
+    <div class="analysis-box ${b.type}">
+      <div class="analysis-title">${b.icon} ${b.title}</div>
+      <div class="analysis-text">${b.text}</div>
+    </div>`).join('');
+}
+
+function renderTrend(id, dataObj, getter, highCol, midCol, lowCol, highThresh, lowThresh){
+  const el = document.getElementById(id); if(!el) return;
+  const keys = Object.keys(dataObj).sort().slice(-14);
+  if(!keys.length){el.innerHTML='<div style="color:var(--muted);font-size:11px;margin:auto">No data yet</div>';return;}
+  const vals = keys.map(k=>getter(dataObj[k]));
+  const max = Math.max(...vals.filter(v=>v!=null), 1);
+  el.innerHTML='';
+  keys.forEach((k,i)=>{
+    const v=vals[i]; const pct=v!=null?Math.round((v/max)*100):0;
+    const col=v==null?'var(--border)':v>=highThresh?highCol:v>=lowThresh?midCol:lowCol;
+    const dt=parseDate(k);
+    const c=document.createElement('div'); c.className='trend-col';
+    c.innerHTML=`<div class="trend-val" style="color:${col}">${v!=null?Math.round(v):'—'}</div><div class="trend-bar-outer"><div class="trend-bar-inner" style="height:${pct}%;background:${col}"></div></div><div class="trend-lbl">${dt.getDate()}/${dt.getMonth()+1}</div>`;
+    el.appendChild(c);
+  });
+}
+
+function renderWhoopStrip(){
+  const strip = document.getElementById('whoopTodayStrip');
+  if(!whoopCache || !whoopLoaded){strip.innerHTML='';return;}
+  const d = whoopCache.data[selectedDate];
+  if(!d){strip.innerHTML='';return;}
+  const rec=d.recovery||{}, slp=d.sleep||{};
+  const recScore=rec.score!=null?Math.round(rec.score):null;
+  strip.innerHTML=`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <span style="font-size:11px;color:var(--whoop);font-weight:700;">💚 WHOOP</span>
+      ${recScore!=null?`<span style="font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;color:${recoveryColor(recScore)}">Recovery: ${recScore}%</span>`:''}
+      ${slp.actual_hours!=null?`<span style="font-size:12px;color:var(--muted)">Sleep: ${slp.actual_hours}h</span>`:''}
+      ${rec.hrv!=null?`<span style="font-size:12px;color:var(--muted)">HRV: ${Math.round(rec.hrv)}ms</span>`:''}
+      ${rec.rhr!=null?`<span style="font-size:12px;color:var(--muted)">RHR: ${Math.round(rec.rhr)}bpm</span>`:''}
+    </div>`;
+}
+
+async function refreshWhoopData(){
+  document.getElementById('metricsGrid').innerHTML='<div class="loading"><span class="spinner"></span>Refreshing...</div>';
+  const data = await fetchWhoopData();
+  if(data) renderWhoopSection(data);
+}
+
+function showWhoopConnect(){
+  document.getElementById('whoopConnectSection').innerHTML=`
+    <div class="whoop-connect">
+      <div class="whoop-logo">💚</div>
+      <h3>Connect Your Whoop</h3>
+      <p>Connect once and your recovery, sleep, HRV, and blood oxygen data will sync automatically every day — powering deep performance analysis.</p>
+      <a class="whoop-btn" href="/.netlify/functions/auth?action=login">Connect Whoop →</a>
+    </div>`;
+  document.getElementById('whoopDataSection').style.display='none';
+}
+
+// ── SAVE ──
+function loadDayState(key){
+  const d=state[key]||{};
+  currentPlayed=d.played||0; currentWins=d.wins||0; currentMood=d.mood||''; currentChecks=d.checks?JSON.parse(JSON.stringify(d.checks)):{};
+  document.getElementById('val-played').textContent=currentPlayed;
+  document.getElementById('val-wins').textContent=currentWins;
+  document.getElementById('sessionNotes').value=d.notes||'';
+  updateWinRate(); renderMood(); renderSchedule(); renderWhoopStrip();
+}
+
+function saveDay(){
+  state[selectedDate]={played:currentPlayed,wins:currentWins,mood:currentMood,notes:document.getElementById('sessionNotes').value,checks:JSON.parse(JSON.stringify(currentChecks))};
+  saveState(); renderDateGrid();
+  showToast('✅ Saved!'); renderStats(); renderWeek();
+}
+
+function changeCount(field,delta){
+  if(field==='played'){currentPlayed=Math.max(0,currentPlayed+delta);if(currentWins>currentPlayed)currentWins=currentPlayed;document.getElementById('val-played').textContent=currentPlayed;document.getElementById('val-wins').textContent=currentWins;}
+  else{currentWins=Math.max(0,Math.min(currentPlayed,currentWins+delta));document.getElementById('val-wins').textContent=currentWins;}
+  updateWinRate();
+}
+function updateWinRate(){
+  const pct=currentPlayed>0?Math.round(currentWins/currentPlayed*100):0;
+  document.getElementById('winRateText').textContent=currentPlayed>0?pct+'%':'—';
+  document.getElementById('winRateBar').style.width=pct+'%';
+  document.getElementById('winRateBar').style.background=pct>=60?'var(--green)':pct>=40?'var(--gold)':'var(--red)';
+}
+function setMood(m){currentMood=(currentMood===m)?'':m;renderMood();}
+function renderMood(){document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===currentMood));}
+
+// ── SYNC CODE ──
+function generateSyncCode(){
+  const payload=btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+  localStorage.setItem('eafc_sync_payload',payload);
+  const now=new Date();
+  const dateStr=`${now.getDate()}${now.getMonth()+1}${now.getFullYear().toString().slice(-2)}`;
+  const hashCode=Math.abs(payload.split('').reduce((a,c)=>a+c.charCodeAt(0),0)%9000)+1000;
+  const code=`${dateStr}-${hashCode}`;
+  localStorage.setItem('eafc_sync_code',code);
+  document.getElementById('syncCodeDisplay').textContent=code;
+  showToast('✅ Code ready — send to coach!');
+}
+
+// ── COACH ──
+function loadCoachData(){
+  const code=document.getElementById('coachCodeInput').value.trim();
+  if(!code){alert('Please enter a code');return;}
+  const stored=localStorage.getItem('eafc_sync_code');
+  const payload=localStorage.getItem('eafc_sync_payload');
+  let s=null;
+  if(stored===code&&payload){try{s=JSON.parse(decodeURIComponent(escape(atob(payload))));}catch(e){}}
+  if(!s) s=state;
+  if(!s||!Object.keys(s).length){document.getElementById('coachContent').innerHTML='<div style="color:var(--red);text-align:center;padding:20px;font-size:13px;">Code not found. Ask player to generate a new code.</div>';return;}
+  renderCoachView(s);
+}
+
+function renderCoachView(s){
+  const keys=Object.keys(s).sort();
+  let total=0,wins=0,days=0,bestPct=0,bestDay=null,schedDone=0,schedTotal=0;
+  keys.forEach(k=>{const d=s[k];if(!d)return;const p=d.played||0,w=d.wins||0;if(p>0){total+=p;wins+=w;days++;const pct=Math.round(w/p*100);if(pct>bestPct){bestPct=pct;bestDay=k;}}if(d.checks){const v=Object.values(d.checks);schedDone+=v.filter(x=>x==='done').length;schedTotal+=v.length;}});
+  const overall=total>0?Math.round(wins/total*100):0;
+  const adhere=schedTotal>0?Math.round(schedDone/schedTotal*100):0;
+  const sc=v=>v>=60?'var(--green)':v>=40?'var(--gold)':v>0?'var(--red)':'var(--muted)';
+  const daysLeft=Math.max(0,Math.ceil((TOURNAMENT_DATE-new Date())/86400000));
+
+  let html=`<div class="stats-grid" style="margin-bottom:14px">
+    <div class="stat-card"><div class="stat-val" style="color:var(--accent)">${total}</div><div class="stat-lbl">Total Games</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:${sc(overall)}">${overall||'—'}%</div><div class="stat-lbl">Win Rate</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--gold)">${days}</div><div class="stat-lbl">Days Active</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:${sc(adhere)}">${adhere||'—'}%</div><div class="stat-lbl">Schedule Adh.</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--accent2)">${daysLeft}</div><div class="stat-lbl">Days Left</div></div>
+  </div>`;
+
+  html+='<div class="card-title" style="margin:14px 0 10px">📅 Daily Log (Latest First)</div>';
+  const recent=keys.filter(k=>s[k]).slice(-14).reverse();
+  recent.forEach(k=>{
+    const d=s[k], dt=parseDate(k);
+    const p=d.played||0,w=d.wins||0, pct=p>0?Math.round(w/p*100):0;
+    const wrc=pct>=60?'var(--green)':pct>=40?'var(--gold)':pct>0?'var(--red)':'var(--muted)';
+    const wr=p>0?`${w}W/${p-w}L (${pct}%)`: 'No games';
+    let sched='';
+    if(d.checks){const done=Object.values(d.checks).filter(v=>v==='done').length,tot=Object.values(d.checks).length;sched=`Schedule: ${done}/${tot}`;}
+
+    // Whoop data for this day
+    let whoopRow='';
+    if(whoopCache&&whoopCache.data[k]){
+      const wd=whoopCache.data[k];
+      const rec=wd.recovery||{}, slp=wd.sleep||{};
+      whoopRow=`<div class="coach-whoop-row">
+        ${rec.score!=null?`<span class="coach-whoop-badge">💚 Recovery: <strong style="color:${recoveryColor(rec.score)}">${Math.round(rec.score)}%</strong></span>`:''}
+        ${slp.actual_hours!=null?`<span class="coach-whoop-badge">😴 Sleep: ${slp.actual_hours}h</span>`:''}
+        ${rec.hrv!=null?`<span class="coach-whoop-badge">💓 HRV: ${Math.round(rec.hrv)}ms</span>`:''}
+        ${rec.rhr!=null?`<span class="coach-whoop-badge">❤️ RHR: ${Math.round(rec.rhr)}bpm</span>`:''}
+      </div>`;
+    }
+
+    html+=`<div class="coach-day-item" ${SPECIAL_DATES[k]?'style="border-color:rgba(179,136,255,.4)"':''}>
+      <div class="coach-day-header">
+        <span class="coach-day-date">${DAY_EN[dt.getDay()]} ${dt.getDate()} ${MON_FULL[dt.getMonth()]}${SPECIAL_DATES[k]?' 📌':''}</span>
+        <span class="coach-day-wr" style="color:${wrc}">${wr}</span>
+      </div>
+      <div class="coach-day-mood">🧠 ${d.mood||'—'}  ${sched?`| 📋 ${sched}`:''}</div>
+      ${whoopRow}
+      ${d.notes?`<div class="coach-day-note">"${d.notes}"</div>`:''}
+    </div>`;
+  });
+
+  document.getElementById('coachContent').innerHTML=html;
+  showToast('✅ Data loaded!');
+}
+
+// ── STATS ──
+function renderStats(){
+  const keys=Object.keys(state).sort();
+  let total=0,wins=0,days=0,bestPct=0,bestDay=null,last10=[],schedDone=0,schedTotal=0;
+  keys.forEach(k=>{const d=state[k];if(!d)return;const p=d.played||0,w=d.wins||0;if(p>0){total+=p;wins+=w;days++;const pct=Math.round(w/p*100);if(pct>bestPct){bestPct=pct;bestDay=k;}last10.push({k,p,w,pct});}if(d.checks){const v=Object.values(d.checks);schedDone+=v.filter(x=>x==='done').length;schedTotal+=v.length;}});
+  const overall=total>0?Math.round(wins/total*100):0;
+  const adhere=schedTotal>0?Math.round(schedDone/schedTotal*100):0;
+  const sc=v=>v>=60?'var(--green)':v>=40?'var(--gold)':v>0?'var(--red)':'var(--muted)';
+
+  document.getElementById('statsGrid').innerHTML=`
+    <div class="stat-card"><div class="stat-val" style="color:var(--accent)">${total}</div><div class="stat-lbl">Total Games</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--green)">${wins}</div><div class="stat-lbl">Total Wins</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:${sc(overall)}">${overall||'—'}%</div><div class="stat-lbl">Win Rate</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--gold)">${days}</div><div class="stat-lbl">Days Logged</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:${sc(adhere)}">${adhere||'—'}%</div><div class="stat-lbl">Schedule Adh.</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--accent2)">${days>0?Math.round(total/days*10)/10:'—'}</div><div class="stat-lbl">Games/Day</div></div>`;
+
+  const streak=document.getElementById('streakDisplay'); streak.innerHTML='';
+  const last=last10.slice(-10);
+  if(!last.length){streak.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;width:100%">No data yet</div>';}
+  else{const padded=[...Array(Math.max(0,10-last.length)).fill(null),...last];padded.forEach(item=>{const dot=document.createElement('div');if(!item){dot.className='streak-dot empty';dot.textContent='·';}else{dot.className=`streak-dot ${item.pct>=50?'win':'loss'}`;dot.textContent=item.pct+'%';}streak.appendChild(dot);});}
+
+  const chart=document.getElementById('barChart'); chart.innerHTML='';
+  const recent=keys.filter(k=>state[k]&&state[k].played>0).slice(-14);
+  if(!recent.length){chart.innerHTML='<div style="color:var(--muted);font-size:12px;margin:auto">No data yet</div>';}
+  else{recent.forEach(k=>{const d=state[k];const pct=Math.round(d.wins/d.played*100);const col=pct>=60?'var(--green)':pct>=40?'var(--gold)':'var(--red)';const dt=parseDate(k);const c=document.createElement('div');c.className='trend-col';c.innerHTML=`<div class="trend-val" style="color:${col}">${pct}%</div><div class="trend-bar-outer"><div class="trend-bar-inner" style="height:${pct}%;background:${col}"></div></div><div class="trend-lbl">${dt.getDate()}/${dt.getMonth()+1}</div>`;chart.appendChild(c);});}
+
+  const bdw=document.getElementById('bestDayWrap');
+  if(bestDay){const bd=parseDate(bestDay),bs=state[bestDay];bdw.innerHTML=`<div style="background:linear-gradient(135deg,rgba(255,193,7,.08),rgba(255,193,7,.02));border:1px solid rgba(255,193,7,.25);border-radius:var(--radius);padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:12px"><div style="font-size:24px">🌟</div><div><div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:1px;text-transform:uppercase">Best Day</div><div style="font-size:16px;font-weight:700;margin-top:2px">${DAY_EN[bd.getDay()]} ${bd.getDate()} ${MON_FULL[bd.getMonth()]} — ${bestPct}% (${bs.wins}/${bs.played})</div></div></div>`;}
+  else bdw.innerHTML='';
+
+  document.getElementById('adherenceStats').innerHTML=schedTotal>0
+    ?`<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:var(--muted)">Completed items</span><span style="color:var(--green);font-weight:700">${schedDone}/${schedTotal}</span></div><div class="win-rate-bar"><div class="win-rate-fill" style="width:${adhere}%;background:${adhere>=70?'var(--green)':adhere>=40?'var(--gold)':'var(--red)'}"></div></div>`
+    :'<div style="color:var(--muted);font-size:13px">No data yet</div>';
+}
+
+// ── WEEK ──
+function renderWeek(){
+  const t=today(), dow=t.getDay(), wStart=new Date(t.getTime()-dow*86400000);
+  const grid=document.getElementById('weekGrid'); grid.innerHTML='';
+  let wp=0,ww=0;
+  for(let i=0;i<7;i++){
+    const d=new Date(wStart.getTime()+i*86400000), key=dateKey(d);
+    const data=state[key], isToday=dateKey(d)===dateKey(t);
+    const div=document.createElement('div');
+    let cls='week-day'; if(isToday)cls+=' today'; if(!data||!data.played)cls+=' empty';
+    div.className=cls;
+    let wr='—',games='',wrc='var(--muted)',recStr='';
+    if(data&&data.played>0){const pct=Math.round(data.wins/data.played*100);wr=pct+'%';games=`${data.played}G`;wp+=data.played;ww+=data.wins;wrc=pct>=60?'var(--green)':pct>=40?'var(--gold)':'var(--red)';}
+    if(whoopCache&&whoopCache.data[key]){const rec=whoopCache.data[key].recovery;if(rec&&rec.score!=null)recStr=`<div class="week-day-rec">💚${Math.round(rec.score)}%</div>`;}
+    div.innerHTML=`<div class="week-day-name">${DAY_EN[d.getDay()]}</div><div class="week-day-wr" style="color:${wrc}">${wr}</div><div class="week-day-games">${games||d.getDate()+'/'+(d.getMonth()+1)}</div>${recStr}`;
+    grid.appendChild(div);
+  }
+  const wWR=wp>0?Math.round(ww/wp*100):0, wrc=wWR>=60?'var(--green)':wWR>=40?'var(--gold)':wWR>0?'var(--red)':'var(--muted)';
+  document.getElementById('weekSummary').innerHTML=wp>0
+    ?`<div style="display:flex;gap:8px;flex-wrap:wrap"><div class="stat-card" style="flex:1;min-width:90px"><div class="stat-val" style="color:var(--accent)">${wp}</div><div class="stat-lbl">Games</div></div><div class="stat-card" style="flex:1;min-width:90px"><div class="stat-val" style="color:var(--green)">${ww}</div><div class="stat-lbl">Wins</div></div><div class="stat-card" style="flex:1;min-width:90px"><div class="stat-val" style="color:${wrc}">${wWR}%</div><div class="stat-lbl">Win Rate</div></div></div>`
+    :'<div style="color:var(--muted);font-size:13px">No data this week yet</div>';
+}
+
+// ── TABS ──
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['daily','whoop','stats','week','coach'][i]===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if(name==='stats') renderStats();
+  if(name==='week')  renderWeek();
+  if(name==='whoop' && !whoopLoaded) initWhoop();
+}
+
+// ── TOAST ──
+function showToast(msg='✅ Saved!'){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// ── INIT ──
+async function initWhoop(){
+  showWhoopConnect();
+  const data = await fetchWhoopData();
+  if(data){ renderWhoopSection(data); renderWhoopStrip(); }
+}
+
+function init(){
+  renderCountdown(); setInterval(renderCountdown,60000);
+  renderDateGrid(); loadDayState(selectedDate); renderStats(); renderWeek();
+  // Try to load Whoop silently
+  fetchWhoopData().then(data=>{ if(data){ whoopLoaded=true; renderWhoopStrip(); } });
+  // Show connect screen by default on Whoop tab
+  showWhoopConnect();
+}
+init();
+</script>
+</body>
+</html>

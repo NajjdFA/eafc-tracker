@@ -1,0 +1,8 @@
+{
+  "name": "eafc-performance-hub",
+  "version": "1.0.0",
+  "description": "EA FC Tournament Performance Tracker with Whoop Integration",
+  "scripts": {
+    "dev": "netlify dev"
+  }
+}
