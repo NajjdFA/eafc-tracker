@@ -867,6 +867,20 @@ function loadDayState(key){
   currentWater=d.water||0;
   currentChecks=d.checks?JSON.parse(JSON.stringify(d.checks)):{};
   document.getElementById('sessionNotes').value=d.notes||'';
+  // Restore schedule settings
+  if(d.schedSettings){
+    const ss=d.schedSettings;
+    const s1El=document.getElementById('s1Duration');
+    const s2El=document.getElementById('s2Duration');
+    const napEl=document.getElementById('napToggle');
+    const s2EEl=document.getElementById('s2EarlyToggle');
+    const wakeEl=document.getElementById('wakeUpInput');
+    if(s1El) s1El.value=ss.s1Duration||'120';
+    if(s2El) s2El.value=ss.s2Duration||'150';
+    if(napEl) napEl.checked=ss.hasNap!==false;
+    if(s2EEl) s2EEl.checked=ss.s2Early||false;
+    if(wakeEl&&d.wakeUpTime) wakeEl.value=d.wakeUpTime;
+  }
   renderWater(); renderMood(); renderSchedule();
 }
 
@@ -1010,6 +1024,12 @@ function saveDay(){
     state[selectedDate].trainingHours = Math.round(totalMins/60*10)/10;
     state[selectedDate].trainingSessions = sessions;
     state[selectedDate].wakeUpTime = document.getElementById('wakeUpInput')?.value || null;
+    state[selectedDate].schedSettings = {
+      s1Duration: document.getElementById('s1Duration')?.value || '120',
+      s2Duration: document.getElementById('s2Duration')?.value || '150',
+      hasNap: document.getElementById('napToggle')?.checked ?? true,
+      s2Early: document.getElementById('s2EarlyToggle')?.checked ?? false
+    };
   }
 
   saveState();
