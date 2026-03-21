@@ -1810,10 +1810,10 @@ function renderMatchAnalytics(){
         <div class="analytics-lbl">Total Matches</div>
       </div>
     </div>
-    ${renderMatchInsights(wr, avgPoss, shotAcc, avgDefErrors)}`;
+    ${renderMatchInsights(wr, avgPoss, shotAcc, avgDefErrors, avgPassAcc)}`;
 }
 
-function renderMatchInsights(wr, poss, acc, defErr){
+function renderMatchInsights(wr, poss, acc, defErr, avgPassAcc){
   const tips = [];
   if(wr >= 60) tips.push({t:'good',txt:`Win rate at <strong>${wr}%</strong> — strong performance. Keep the consistency.`});
   else if(wr >= 40) tips.push({t:'warning',txt:`Win rate at <strong>${wr}%</strong> — room to improve. Check defensive errors and shot accuracy.`});
