@@ -1192,42 +1192,87 @@ function renderCoachDashboard(s){
 // ── STATS ──
 function renderStats(){
   const keys=Object.keys(state).filter(k=>parseDate(k)>=START_DATE).sort();
-  let total=0,wins=0,days=0,bestPct=0,bestDay=null,last10=[],schedDone=0,schedTotal=0;
+  let schedDone=0,schedTotal=0;
   keys.forEach(k=>{
     const d=state[k]; if(!d) return;
-    const p=d.played||0,w=d.wins||0;
-    if(p>0){total+=p;wins+=w;days++;const pct=Math.round(w/p*100);if(pct>bestPct){bestPct=pct;bestDay=k;}last10.push({k,p,w,pct});}
     if(d.checks){const vals=Object.values(d.checks);schedDone+=vals.filter(v=>v==='done').length;schedTotal+=vals.length;}
   });
-  const overall=total>0?Math.round(wins/total*100):0;
+
+  // Calculate game stats from matches array
+  const total = matches.length;
+  const wins  = matches.filter(m=>m.result==='W').length;
+  const losses= matches.filter(m=>m.result==='L').length;
+  const overall = total>0?Math.round(wins/total*100):0;
   const adherePct=schedTotal>0?Math.round(schedDone/schedTotal*100):0;
   const sc=v=>v>=60?'var(--green)':v>=40?'var(--gold)':v>0?'var(--red)':'var(--muted)';
+
+  // Group by date for per-day stats
+  const byDate={};
+  matches.forEach(m=>{
+    if(!byDate[m.date]) byDate[m.date]={played:0,wins:0};
+    byDate[m.date].played++;
+    if(m.result==='W') byDate[m.date].wins++;
+  });
+  const days = Object.keys(byDate).length;
+  const last10 = matches.slice(0,10).map(m=>({
+    k:m.date, pct:m.result==='W'?100:m.result==='D'?50:0,
+    result:m.result, mode:m.mode
+  }));
+
+  // Best day
+  let bestDay=null,bestPct=0;
+  Object.entries(byDate).forEach(([date,d])=>{
+    const pct=Math.round(d.wins/d.played*100);
+    if(pct>bestPct){bestPct=pct;bestDay=date;}
+  });
 
   document.getElementById('statsGrid').innerHTML=`
     <div class="stat-card"><div class="stat-val" style="color:var(--accent)">${total}</div><div class="stat-lbl">Total Games</div></div>
     <div class="stat-card"><div class="stat-val" style="color:var(--green)">${wins}</div><div class="stat-lbl">Total Wins</div></div>
     <div class="stat-card"><div class="stat-val" style="color:${sc(overall)}">${overall>0?overall+'%':'—'}</div><div class="stat-lbl">Win Rate</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--gold)">${days}</div><div class="stat-lbl">Days Logged</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--gold)">${days}</div><div class="stat-lbl">Days Active</div></div>
     <div class="stat-card"><div class="stat-val" style="color:${sc(adherePct)}">${adherePct>0?adherePct+'%':'—'}</div><div class="stat-lbl">Schedule Adh.</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--accent2)">${days>0?Math.round(total/days*10)/10:'—'}</div><div class="stat-lbl">Avg Games/Day</div></div>`;
+    <div class="stat-card"><div class="stat-val" style="color:var(--accent2)">${days>0?(total/days).toFixed(1):'—'}</div><div class="stat-lbl">Games/Day Avg</div></div>`;
 
+  // Streak — last 10 matches
   const streak=document.getElementById('streakDisplay'); streak.innerHTML='';
-  const last=last10.slice(-10);
-  if(!last.length){streak.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;width:100%">No data yet</div>';}
-  else{const padded=[...Array(Math.max(0,10-last.length)).fill(null),...last];padded.forEach(item=>{const dot=document.createElement('div');if(!item){dot.className='streak-dot empty';dot.textContent='·';}else{dot.className=`streak-dot ${item.pct>=50?'win':'loss'}`;dot.textContent=item.pct+'%';}streak.appendChild(dot);});}
+  if(!last10.length){streak.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;width:100%">No data yet</div>';}
+  else{
+    const padded=[...Array(Math.max(0,10-last10.length)).fill(null),...last10].reverse();
+    padded.forEach(item=>{
+      const dot=document.createElement('div');
+      if(!item){dot.className='streak-dot empty';dot.textContent='·';}
+      else{
+        const isWin=item.result==='W';
+        const isDraw=item.result==='D';
+        dot.className=`streak-dot ${isWin?'win':isDraw?'empty':'loss'}`;
+        dot.textContent=isWin?'W':isDraw?'D':'L';
+      }
+      streak.appendChild(dot);
+    });
+  }
 
+  // Bar chart — wins per day
   const chart=document.getElementById('barChart'); chart.innerHTML='';
-  const recent=keys.filter(k=>state[k]&&state[k].played>0).slice(-14);
-  if(!recent.length){chart.innerHTML='<div style="color:var(--muted);font-size:12px;margin:auto">No data yet</div>';}
-  else{recent.forEach(k=>{const d=state[k];const pct=Math.round(d.wins/d.played*100);const col=pct>=60?'var(--green)':pct>=40?'var(--gold)':'var(--red)';const dt=parseDate(k);const c=document.createElement('div');c.className='bar-col';c.innerHTML=`<div class="bar-pct">${pct}%</div><div class="bar-outer"><div class="bar-inner" style="height:${pct}%;background:${col}"></div></div><div class="bar-lbl">${dt.getDate()}/${dt.getMonth()+1}</div>`;chart.appendChild(c);});}
+  const dateKeys=Object.keys(byDate).sort().slice(-14);
+  if(!dateKeys.length){chart.innerHTML='<div style="color:var(--muted);font-size:12px;margin:auto">No data yet</div>';}
+  else{dateKeys.forEach(k=>{
+    const d=byDate[k];const pct=Math.round(d.wins/d.played*100);
+    const col=pct>=60?'var(--green)':pct>=40?'var(--gold)':'var(--red)';
+    const dt=parseDate(k);const c=document.createElement('div');c.className='bar-col';
+    c.innerHTML=`<div class="bar-pct">${pct}%</div><div class="bar-outer"><div class="bar-inner" style="height:${pct}%;background:${col}"></div></div><div class="bar-lbl">${dt.getDate()}/${dt.getMonth()+1}</div>`;
+    chart.appendChild(c);
+  });}
 
   const bdw=document.getElementById('bestDayWrap');
-  if(bestDay){const bd=parseDate(bestDay);const bs=state[bestDay];bdw.innerHTML=`<div class="best-day-card"><div class="best-day-icon">🌟</div><div class="best-day-info"><div class="lbl">Best Day</div><div class="val">${DAY_EN[bd.getDay()]} ${bd.getDate()} ${MON_FULL[bd.getMonth()]} — ${bestPct}% (${bs.wins}/${bs.played})</div></div></div>`;}
-  else bdw.innerHTML='';
+  if(bestDay){
+    const bd=parseDate(bestDay);const bs=byDate[bestDay];
+    bdw.innerHTML=`<div class="best-day-card"><div class="best-day-icon">🌟</div><div class="best-day-info"><div class="lbl">Best Day</div><div class="val">${DAY_EN[bd.getDay()]} ${bd.getDate()} ${MON_FULL[bd.getMonth()]} — ${bestPct}% (${bs.wins}W/${bs.played}G)</div></div></div>`;
+  } else bdw.innerHTML='';
 
   document.getElementById('adherenceStats').innerHTML=schedTotal>0
     ?`<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:var(--muted)">Completed items</span><span style="color:var(--green);font-weight:700">${schedDone} / ${schedTotal}</span></div><div class="win-rate-bar"><div class="win-rate-fill" style="width:${adherePct}%;background:${adherePct>=70?'var(--green)':adherePct>=40?'var(--gold)':'var(--red)'}"></div></div>`
-    :'<div style="color:var(--muted);font-size:13px">No data yet — start logging your daily schedule</div>';
+    :'<div style="color:var(--muted);font-size:13px">No data yet</div>';
 }
 
 // ── WEEK ──
@@ -1541,6 +1586,7 @@ async function loadFromCloud(){
 
     showSyncStatus('✅ Data loaded!', 'var(--green)');
     renderDateGrid(); loadDayState(selectedDate); renderStats(); renderWeek();
+    renderMatchList(); renderMatchAnalytics();
   } catch(e){
     showSyncStatus('📱 Offline mode', 'var(--muted)');
   }
