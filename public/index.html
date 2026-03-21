@@ -1466,6 +1466,10 @@ async function saveToCloud(dateStr, data){
       whoop: data.whoop||null,
       played: data.played||0,
       wins: data.wins||0,
+      wake_up_time: data.wakeUpTime||null,
+      sched_settings: data.schedSettings||null,
+      training_hours: data.trainingHours||null,
+      training_sessions: data.trainingSessions||null,
       updated_at: new Date().toISOString()
     };
     const {error} = await supa.from('player_data').upsert(row, {onConflict:'date'});
@@ -1513,7 +1517,11 @@ async function loadFromCloud(){
           mood: row.mood, water: row.water||0,
           notes: row.notes, checks: row.checks,
           whoop: row.whoop, played: row.played||0,
-          wins: row.wins||0
+          wins: row.wins||0,
+          wakeUpTime: row.wake_up_time||null,
+          schedSettings: row.sched_settings||null,
+          trainingHours: row.training_hours||null,
+          trainingSessions: row.training_sessions||null
         };
       });
       localStorage.setItem('eafc_tracker_v3', JSON.stringify(state));
