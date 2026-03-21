@@ -1587,6 +1587,8 @@ async function loadFromCloud(){
     showSyncStatus('✅ Data loaded!', 'var(--green)');
     renderDateGrid(); loadDayState(selectedDate); renderStats(); renderWeek();
     renderMatchList(); renderMatchAnalytics();
+    // Also render if matches panel is visible
+    setTimeout(()=>{ renderMatchList(); renderMatchAnalytics(); }, 100);
   } catch(e){
     showSyncStatus('📱 Offline mode', 'var(--muted)');
   }
@@ -1661,6 +1663,39 @@ function saveMatch(){
   const t=document.getElementById('toast'); t.textContent='⚽ Match saved!'; t.classList.add('show'); setTimeout(()=>{t.classList.remove('show');t.textContent='✅ Saved!';},2200);
 }
 
+function editMatch(id){
+  const m = matches.find(x=>x.id===id);
+  if(!m) return;
+
+  // Fill form with match data
+  setMode(m.mode);
+  setResult(m.result);
+  matchState = {
+    mode: m.mode, result: m.result,
+    goalsFor: m.goalsFor, goalsAgainst: m.goalsAgainst,
+    possession: m.possession, shots: m.shots,
+    shotsOnTarget: m.shotsOnTarget, defErrors: m.defErrors,
+    passes: m.passes||0, passAcc: m.passAcc||75
+  };
+  document.getElementById('m-goalsFor').textContent = m.goalsFor;
+  document.getElementById('m-goalsAgainst').textContent = m.goalsAgainst;
+  document.getElementById('m-possession').textContent = m.possession+'%';
+  document.getElementById('m-shots').textContent = m.shots;
+  document.getElementById('m-shotsOnTarget').textContent = m.shotsOnTarget;
+  document.getElementById('m-defErrors').textContent = m.defErrors;
+  document.getElementById('m-passes-input').value = m.passes||0;
+  document.getElementById('m-passAcc').textContent = (m.passAcc||75)+'%';
+  document.getElementById('matchNote').value = m.note||'';
+
+  // Delete old and scroll to form
+  deleteMatch(id);
+  document.querySelector('.card-title').scrollIntoView({behavior:'smooth'});
+
+  const t=document.getElementById('toast');
+  t.textContent='✏️ Edit mode — modify and press Add Match';
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000);
+}
+
 function deleteMatch(id){
   matches = matches.filter(m=>m.id!==id);
   saveMatches(); deleteMatchFromCloud(id);
@@ -1694,7 +1729,10 @@ function renderMatchList(){
         </div>
         ${m.note?`<div style="font-size:10px;color:var(--muted);margin-top:3px;font-style:italic;">"${m.note}"</div>`:''}
       </div>
-      <button onclick="deleteMatch(${m.id})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px;">✕</button>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <button onclick="editMatch(${m.id})" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--accent);cursor:pointer;font-size:11px;padding:3px 8px;font-family:'Cairo',sans-serif;">✏️</button>
+        <button onclick="deleteMatch(${m.id})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px;">✕</button>
+      </div>
     </div>`;
   }).join('');
 }
