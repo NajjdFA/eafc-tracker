@@ -222,6 +222,67 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div class="card-title">🗓 Daily Schedule</div>
       <div id="phaseLabel"></div>
       <div id="specialNotice"></div>
+
+      <!-- SMART SCHEDULE CONTROLS -->
+      <div id="smartScheduleControls" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--accent);text-transform:uppercase;margin-bottom:12px;">⚡ Smart Schedule</div>
+
+        <!-- Wake time row -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+          <span style="font-size:12px;color:var(--muted);min-width:80px;">Wake up at</span>
+          <input type="time" id="wakeUpInput" value="09:00"
+            style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:600;"
+            onchange="rebuildSchedule()">
+          <span id="wakeWarning" style="font-size:11px;font-weight:700;"></span>
+        </div>
+
+        <!-- Session settings -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:5px;">Session 1 duration</div>
+            <select id="s1Duration" onchange="rebuildSchedule()"
+              style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:6px 8px;color:var(--text);font-family:'Cairo',sans-serif;font-size:12px;">
+              <option value="90">1.5 hrs</option>
+              <option value="120" selected>2 hrs (default)</option>
+              <option value="150">2.5 hrs</option>
+              <option value="180">3 hrs</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:5px;">Session 2 duration</div>
+            <select id="s2Duration" onchange="rebuildSchedule()"
+              style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:6px 8px;color:var(--text);font-family:'Cairo',sans-serif;font-size:12px;">
+              <option value="90">1.5 hrs</option>
+              <option value="120" selected>2.5 hrs (default)</option>
+              <option value="150">2.5 hrs</option>
+              <option value="180">3 hrs</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="napToggle" checked onchange="rebuildSchedule()" style="width:16px;height:16px;">
+            <label for="napToggle" style="font-size:12px;color:var(--text);cursor:pointer;">Include rest/nap</label>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="s2EarlyToggle" onchange="rebuildSchedule()" style="width:16px;height:16px;">
+            <label for="s2EarlyToggle" style="font-size:12px;color:var(--text);cursor:pointer;">Advance Session 2</label>
+          </div>
+        </div>
+
+        <!-- Warning banner -->
+        <div id="scheduleWarning" style="display:none;background:rgba(255,23,68,.08);border:1px solid rgba(255,23,68,.3);border-radius:8px;padding:8px 12px;font-size:11px;font-weight:700;color:var(--red);"></div>
+      </div>
+
+      <!-- Completion Bar -->
+      <div id="completionBar" style="margin-bottom:12px;display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">Today's Progress</span>
+          <span id="completionPct" style="font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;">0%</span>
+        </div>
+        <div style="background:var(--surface3);border-radius:20px;height:10px;overflow:hidden;">
+          <div id="completionFill" style="height:100%;border-radius:20px;transition:width .4s ease;width:0%;"></div>
+        </div>
+        <div id="completionLabel" style="font-size:10px;color:var(--muted);margin-top:5px;"></div>
+      </div>
       <div class="schedule-list" id="scheduleList"></div>
     </div>
     <div class="card">
@@ -357,6 +418,22 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           </div>
         </div>
 
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--purple);text-transform:uppercase;margin-bottom:6px;">Passes</div>
+          <input type="number" id="m-passes-input" min="0" max="999" placeholder="e.g. 320"
+            style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--purple);font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;text-align:center;"
+            oninput="matchState.passes=parseInt(this.value)||0">
+        </div>
+
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--purple);text-transform:uppercase;margin-bottom:6px;">Pass Accuracy %</div>
+          <div class="counter" style="width:100%;">
+            <button class="counter-btn" onclick="changeMatch('passAcc',-1)">−</button>
+            <div class="counter-val" id="m-passAcc" style="color:var(--purple);font-size:18px;">75%</div>
+            <button class="counter-btn" onclick="changeMatch('passAcc',1)">+</button>
+          </div>
+        </div>
+
       </div>
 
       <!-- Quick note -->
@@ -473,6 +550,58 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           </div>
           <span style="font-size:11px;color:var(--muted);">Normal: 95–100%</span>
         </div>
+      </div>
+
+      <!-- STRESS READINGS -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--accent2);text-transform:uppercase;margin-bottom:6px;">🧠 Stress Readings (0.0 – 3.0)</div>
+        <div style="background:rgba(255,107,53,.07);border:1px solid rgba(255,107,53,.2);border-radius:10px;padding:8px 12px;margin-bottom:12px;font-size:11px;color:var(--accent2);">
+          Open Whoop → Stress Monitor → log at each moment below
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">☀️ Before Session 1</div>
+            <div class="counter" style="width:100%;">
+              <button class="counter-btn" onclick="changeStress('s1',-0.1)">−</button>
+              <div class="counter-val" id="stress-s1" style="color:var(--accent2);font-size:17px;min-width:50px;">—</div>
+              <button class="counter-btn" onclick="changeStress('s1',0.1)">+</button>
+            </div>
+            <div id="stress-s1-lbl" style="font-size:9px;text-align:center;margin-top:3px;"></div>
+          </div>
+
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">🎮 After Session 1</div>
+            <div class="counter" style="width:100%;">
+              <button class="counter-btn" onclick="changeStress('s2',-0.1)">−</button>
+              <div class="counter-val" id="stress-s2" style="color:var(--accent2);font-size:17px;min-width:50px;">—</div>
+              <button class="counter-btn" onclick="changeStress('s2',0.1)">+</button>
+            </div>
+            <div id="stress-s2-lbl" style="font-size:9px;text-align:center;margin-top:3px;"></div>
+          </div>
+
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">🤝 After Friends Gathering</div>
+            <div class="counter" style="width:100%;">
+              <button class="counter-btn" onclick="changeStress('s3',-0.1)">−</button>
+              <div class="counter-val" id="stress-s3" style="color:var(--accent2);font-size:17px;min-width:50px;">—</div>
+              <button class="counter-btn" onclick="changeStress('s3',0.1)">+</button>
+            </div>
+            <div id="stress-s3-lbl" style="font-size:9px;text-align:center;margin-top:3px;"></div>
+          </div>
+
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">🌙 Before Sleep</div>
+            <div class="counter" style="width:100%;">
+              <button class="counter-btn" onclick="changeStress('s4',-0.1)">−</button>
+              <div class="counter-val" id="stress-s4" style="color:var(--accent2);font-size:17px;min-width:50px;">—</div>
+              <button class="counter-btn" onclick="changeStress('s4',0.1)">+</button>
+            </div>
+            <div id="stress-s4-lbl" style="font-size:9px;text-align:center;margin-top:3px;"></div>
+          </div>
+
+        </div>
+        <div id="stressInsight" style="margin-top:10px;font-size:12px;display:none;"></div>
       </div>
 
       <button class="save-btn" style="background:linear-gradient(135deg,#00c8a0,#008866);" onclick="saveWhoop()">💚 Save Whoop Data</button>
@@ -783,12 +912,21 @@ function renderSchedule(){
   const ph=PHASE_LABELS[phase];
   document.getElementById('phaseLabel').innerHTML=ph?`<div class="phase-label ${ph.cls}">${ph.icon} ${ph.text}</div>`:'';
 
-  // Special notice
   const special=SPECIAL_DATES[selectedDate];
   const noticeEl=document.getElementById('specialNotice');
   if(special&&special.notice){
     noticeEl.innerHTML=`<div class="special-notice"><div class="sn-title">📌 ${special.notice.title}</div>${special.notice.items.map(i=>`<div class="sn-item">• ${i}</div>`).join('')}</div>`;
   } else { noticeEl.innerHTML=''; }
+
+  // Show/hide smart schedule controls
+  const ctrl = document.getElementById('smartScheduleControls');
+  if(ctrl) ctrl.style.display = (phase==='post' && !(special&&special.special_finals)) ? 'block' : 'none';
+
+  // Post phase uses smart dynamic schedule
+  if(phase==='post' && !(special&&special.special_finals)){
+    rebuildSchedule();
+    return;
+  }
 
   const sched=getSchedule(selectedDate);
   const list=document.getElementById('scheduleList'); list.innerHTML='';
@@ -805,6 +943,19 @@ function renderSchedule(){
     div.innerHTML=`<div class="sched-check">${checkIcon}</div><div style="flex:1"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="sched-time">${item.time}</span><span class="sched-name">${item.name}${item.optional?' <span style="font-size:9px;color:var(--muted)">(optional)</span>':''}</span></div>${item.note?`<div class="sched-note">${item.note}</div>`:''}</div>`;
     div.onclick=()=>cycleCheck(i); list.appendChild(div);
   });
+
+  const doneCount = Object.values(currentChecks).filter(v=>v==='done').length;
+  const totalCount = sched.filter(s=>!s.optional).length;
+  const pct = totalCount>0 ? Math.round(doneCount/totalCount*100) : 0;
+  const bar = document.getElementById('completionBar');
+  if(bar && totalCount>0){
+    bar.style.display='block';
+    document.getElementById('completionFill').style.width=pct+'%';
+    document.getElementById('completionFill').style.background=pct>=80?'var(--green)':pct>=50?'var(--gold)':'var(--red)';
+    document.getElementById('completionPct').textContent=pct+'%';
+    document.getElementById('completionPct').style.color=pct>=80?'var(--green)':pct>=50?'var(--gold)':'var(--red)';
+    document.getElementById('completionLabel').textContent=`${doneCount} of ${totalCount} tasks completed`;
+  }
 }
 
 function cycleCheck(i){
@@ -837,10 +988,43 @@ function saveDay(){
   state[selectedDate].water = currentWater;
   state[selectedDate].notes = document.getElementById('sessionNotes').value;
   state[selectedDate].checks = JSON.parse(JSON.stringify(currentChecks));
-  saveState(); renderDateGrid();
+
+  // Save training hours from smart schedule
+  const phase = getPhase(parseDate(selectedDate));
+  if(phase==='post' && window._dynamicSched){
+    let totalMins = 0;
+    const sessions = [];
+    window._dynamicSched.forEach(item=>{
+      if(item.name.includes('Session')){
+        // Parse time range e.g. "11:30 AM – 1:30 PM"
+        const match = item.time.match(/(\d+:\d+ [AP]M)\s*[–-]\s*(\d+:\d+ [AP]M)/);
+        if(match){
+          const start = parseTime12(match[1]);
+          const end   = parseTime12(match[2]);
+          const dur   = end > start ? end - start : end + 1440 - start;
+          totalMins += dur;
+          sessions.push({name: item.name.includes('1') ? 'Session 1' : 'Session 2', start: match[1], end: match[2], mins: dur});
+        }
+      }
+    });
+    state[selectedDate].trainingHours = Math.round(totalMins/60*10)/10;
+    state[selectedDate].trainingSessions = sessions;
+    state[selectedDate].wakeUpTime = document.getElementById('wakeUpInput')?.value || null;
+  }
+
+  saveState();
   saveToCloud(selectedDate, state[selectedDate]);
+  renderDateGrid();
   const t=document.getElementById('toast'); t.textContent='✅ Saved!'; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200);
   renderStats(); renderWeek();
+}
+
+function parseTime12(t){
+  const [time, period] = t.trim().split(' ');
+  let [h, m] = time.split(':').map(Number);
+  if(period==='PM' && h!==12) h+=12;
+  if(period==='AM' && h===12) h=0;
+  return h*60+m;
 }
 
 // ── SLEEP TIME CALCULATOR ──
@@ -916,16 +1100,19 @@ function loadCoachData(){
 function renderCoachDashboard(s){
   const keys = Object.keys(s).filter(k=>s[k]).sort();
   let total=0,wins=0,days=0,bestPct=0,bestDay=null,schedDone=0,schedTotal=0;
+  let totalTrainingHours=0, trainingDays=0;
 
   keys.forEach(k=>{
     const d=s[k]; if(!d) return;
     const p=d.played||0,w=d.wins||0;
     if(p>0){total+=p;wins+=w;days++;const pct=Math.round(w/p*100);if(pct>bestPct){bestPct=pct;bestDay=k;}}
     if(d.checks){const vals=Object.values(d.checks);schedDone+=vals.filter(v=>v==='done').length;schedTotal+=vals.length;}
+    if(d.trainingHours>0){totalTrainingHours+=d.trainingHours;trainingDays++;}
   });
 
   const overall=total>0?Math.round(wins/total*100):0;
   const adherePct=schedTotal>0?Math.round(schedDone/schedTotal*100):0;
+  const avgTraining=trainingDays>0?Math.round(totalTrainingHours/trainingDays*10)/10:null;
   const sc=v=>v>=60?'var(--green)':v>=40?'var(--gold)':v>0?'var(--red)':'var(--muted)';
   const daysLeft=Math.max(0,Math.ceil((TOURNAMENT_DATE-new Date())/86400000));
 
@@ -937,6 +1124,17 @@ function renderCoachDashboard(s){
     <div class="stat-card"><div class="stat-val" style="color:var(--accent2)">${daysLeft}</div><div class="stat-lbl">Days Left</div></div>
     <div class="stat-card"><div class="stat-val" style="color:var(--green)">${days>0?Math.round(total/days*10)/10:'—'}</div><div class="stat-lbl">Games/Day Avg</div></div>
   </div>`;
+
+  if(totalTrainingHours>0){
+    html+=`<div style="background:linear-gradient(135deg,rgba(0,200,255,.1),rgba(0,200,255,.03));border:1px solid rgba(0,200,255,.25);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--accent);text-transform:uppercase;margin-bottom:10px;">🎮 Training Hours</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div class="stat-card" style="flex:1;min-width:90px;"><div class="stat-val" style="color:var(--accent)">${Math.round(totalTrainingHours*10)/10}h</div><div class="stat-lbl">Total Training</div></div>
+        <div class="stat-card" style="flex:1;min-width:90px;"><div class="stat-val" style="color:var(--green)">${avgTraining}h</div><div class="stat-lbl">Avg Per Day</div></div>
+        <div class="stat-card" style="flex:1;min-width:90px;"><div class="stat-val" style="color:var(--gold)">${trainingDays}</div><div class="stat-lbl">Days Logged</div></div>
+      </div>
+    </div>`;
+  }
 
   html+=`<div class="card-title" style="margin:14px 0 10px">📅 Daily Log</div><div class="coach-day-list">`;
 
@@ -958,8 +1156,9 @@ function renderCoachDashboard(s){
           <span class="coach-day-date">${DAY_EN[dt.getDay()]} ${dt.getDate()} ${MON_FULL[dt.getMonth()]}${isSpecial?' 📌':''}</span>
           <span class="coach-day-wr" style="color:${wrColor}">${wr}</span>
         </div>
+        ${d.trainingHours>0?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;"><span style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:${d.trainingHours>=4?'var(--green)':d.trainingHours>=2.5?'var(--gold)':'var(--accent2)'}">🎮 ${d.trainingHours}h trained</span>${d.wakeUpTime?`<span style="font-size:10px;color:var(--muted);">Wake: ${d.wakeUpTime}</span>`:''}</div>`:''}
         <div class="coach-day-mood">🧠 ${d.mood||'—'}  ${d.water!=null&&d.water>0?`| 💧 ${d.water}/8 glasses`:''} ${schedText?`| 📋 ${schedText}`:''}</div>
-        ${d.whoop?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">${d.whoop.recovery!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">💚 <strong style="color:${d.whoop.recovery>=67?'var(--green)':d.whoop.recovery>=34?'var(--gold)':'var(--red)'}">${d.whoop.recovery}%</strong></span>`:''}${d.whoop.sleep!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">😴 ${d.whoop.sleep}h</span>`:''}${d.whoop.hrv!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">💓 ${d.whoop.hrv}ms</span>`:''}${d.whoop.rhr!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">❤️ ${d.whoop.rhr}bpm</span>`:''}${d.whoop.spo2!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">🩸 ${d.whoop.spo2}%</span>`:''}</div>`:''}
+        ${d.whoop?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">${d.whoop.recovery!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">💚 <strong style="color:${d.whoop.recovery>=67?'var(--green)':d.whoop.recovery>=34?'var(--gold)':'var(--red)'}">${d.whoop.recovery}%</strong></span>`:''}${d.whoop.sleep!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">😴 ${d.whoop.sleep}h</span>`:''}${d.whoop.hrv!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">💓 ${d.whoop.hrv}ms</span>`:''}${d.whoop.rhr!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">❤️ ${d.whoop.rhr}bpm</span>`:''}${d.whoop.spo2!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">🩸 ${d.whoop.spo2}%</span>`:''}${d.whoop.stress_s1!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">🧠 Stress: Pre ${d.whoop.stress_s1} → Post ${d.whoop.stress_s2??'—'} → Social ${d.whoop.stress_s3??'—'} → Sleep ${d.whoop.stress_s4??'—'}</span>`:''}</div>`:''}
         ${d.notes?`<div class="coach-day-note">"${d.notes}"</div>`:''}
       </div>`;
     });
@@ -1038,7 +1237,68 @@ function renderWeek(){
     :'<div style="color:var(--muted);font-size:13px">No data this week yet</div>';
 }
 
-// ── WHOOP MANUAL ──
+// ── STRESS ──
+let stressVals = {s1:null, s2:null, s3:null, s4:null};
+
+function stressLabel(v){
+  if(v===null) return '';
+  if(v<=1.0) return {text:'Low ✅', color:'var(--green)'};
+  if(v<=2.0) return {text:'Moderate ⚠️', color:'var(--gold)'};
+  return {text:'High 🔴', color:'var(--red)'};
+}
+
+function changeStress(key, delta){
+  const cur = stressVals[key];
+  stressVals[key] = Math.round(Math.max(0, Math.min(3.0, (cur===null?1.0:cur)+delta))*10)/10;
+  renderStress();
+}
+
+function renderStress(){
+  ['s1','s2','s3','s4'].forEach(k=>{
+    const v = stressVals[k];
+    const el = document.getElementById('stress-'+k);
+    const lbl = document.getElementById('stress-'+k+'-lbl');
+    if(el) el.textContent = v!==null ? v.toFixed(1) : '—';
+    if(lbl){
+      const info = stressLabel(v);
+      lbl.textContent = info.text||'';
+      lbl.style.color = info.color||'var(--muted)';
+    }
+  });
+
+  // Stress insight
+  const insight = document.getElementById('stressInsight');
+  const {s1,s2,s3,s4} = stressVals;
+  if(s1!==null && s2!==null){
+    insight.style.display='block';
+    const tips=[];
+    const diff12 = s2-s1;
+    if(diff12>0.5) tips.push({t:'warn',txt:`Stress increased <strong>+${diff12.toFixed(1)}</strong> during Session 1 — gaming is adding stress. Consider shorter sessions or a break mid-session.`});
+    else if(diff12<-0.3) tips.push({t:'good',txt:`Stress dropped <strong>${Math.abs(diff12).toFixed(1)}</strong> during Session 1 — gaming is working as a stress release ✅`});
+
+    if(s3!==null){
+      const diff23 = s3-s2;
+      if(diff23<-0.3) tips.push({t:'good',txt:`Friends gathering reduced stress by <strong>${Math.abs(diff23).toFixed(1)}</strong> — social time is genuinely recharging ✅`});
+      else if(diff23>0.5) tips.push({t:'warn',txt:`Stress increased after gathering (+${diff23.toFixed(1)}). Late night may be affecting recovery.`});
+    }
+    if(s4!==null && s4>1.5) tips.push({t:'danger',txt:`Pre-sleep stress at <strong>${s4.toFixed(1)}</strong> — expect lower sleep quality tonight. Try 10 min of calm before bed.`});
+    if(s4!==null && s4<=1.0) tips.push({t:'good',txt:`Pre-sleep stress low at <strong>${s4.toFixed(1)}</strong> — body is ready for quality recovery sleep ✅`});
+
+    if(!tips.length) insight.innerHTML='';
+    else insight.innerHTML = tips.map(t=>`<div style="border-left:3px solid ${t.t==='good'?'var(--green)':t.t==='warn'?'var(--gold)':'var(--red)'};background:var(--surface2);border-radius:10px;padding:8px 12px;margin-bottom:6px;font-size:11px;color:var(--muted);line-height:1.7;">${t.txt}</div>`).join('');
+  } else {
+    insight.style.display='none';
+  }
+}
+
+function loadStressForDate(key){
+  const w = (state[key]||{}).whoop||{};
+  stressVals = {
+    s1: w.stress_s1??null, s2: w.stress_s2??null,
+    s3: w.stress_s3??null, s4: w.stress_s4??null
+  };
+  renderStress();
+}
 let whoopVals = { recovery: null, sleep: null, hrv: null, rhr: null, spo2: null };
 
 function changeWhoop(field, delta){
@@ -1079,6 +1339,7 @@ function loadWhoopForDate(key){
   document.getElementById('whoop-wakeTime').value  = w.wakeTime||'';
   if(w.sleepTime && w.wakeTime) updateSleepDuration();
   else document.getElementById('sleepDurationCalc').textContent='';
+  loadStressForDate(key);
   const dt = parseDate(key);
   document.getElementById('whoopDateLabel').textContent = `Logging for: ${DAY_EN[dt.getDay()]} ${dt.getDate()} ${MON_FULL[dt.getMonth()]}`;
   renderWhoopInputs();
@@ -1092,6 +1353,8 @@ function saveWhoop(){
     ...whoopVals,
     sleepTime: document.getElementById('whoop-sleepTime').value || null,
     wakeTime:  document.getElementById('whoop-wakeTime').value  || null,
+    stress_s1: stressVals.s1, stress_s2: stressVals.s2,
+    stress_s3: stressVals.s3, stress_s4: stressVals.s4,
   };
   saveState();
   saveToCloud(selectedDate, state[selectedDate]);
@@ -1258,7 +1521,8 @@ async function loadFromCloud(){
 let matchState = {
   mode: 'Champ', result: 'W',
   goalsFor:0, goalsAgainst:0,
-  possession:50, shots:0, shotsOnTarget:0, defErrors:0
+  possession:50, shots:0, shotsOnTarget:0, defErrors:0,
+  passes:0, passAcc:75
 };
 let matchFilter = 'All';
 let matches = JSON.parse(localStorage.getItem('eafc_matches_v1')||'[]');
@@ -1282,13 +1546,13 @@ function setFilter(f){
 }
 
 function changeMatch(field, delta){
-  const mins={goalsFor:0,goalsAgainst:0,possession:1,shots:0,shotsOnTarget:0,defErrors:0};
-  const maxs={goalsFor:20,goalsAgainst:20,possession:99,shots:30,shotsOnTarget:30,defErrors:10};
+  const mins={goalsFor:0,goalsAgainst:0,possession:1,shots:0,shotsOnTarget:0,defErrors:0,passes:0,passAcc:0};
+  const maxs={goalsFor:20,goalsAgainst:20,possession:99,shots:30,shotsOnTarget:30,defErrors:10,passes:999,passAcc:100};
   matchState[field] = Math.max(mins[field], Math.min(maxs[field], matchState[field]+delta));
-  // Keep shotsOnTarget <= shots
   if(field==='shots' && matchState.shotsOnTarget > matchState.shots) matchState.shotsOnTarget = matchState.shots;
   if(field==='shotsOnTarget' && matchState.shotsOnTarget > matchState.shots) matchState.shots = matchState.shotsOnTarget;
-  document.getElementById('m-'+field).textContent = field==='possession' ? matchState[field]+'%' : matchState[field];
+  const display = (field==='possession'||field==='passAcc') ? matchState[field]+'%' : matchState[field];
+  document.getElementById('m-'+field).textContent = display;
 }
 
 function saveMatch(){
@@ -1303,17 +1567,21 @@ function saveMatch(){
     shots: matchState.shots,
     shotsOnTarget: matchState.shotsOnTarget,
     defErrors: matchState.defErrors,
+    passes: parseInt(document.getElementById('m-passes-input').value)||0,
+    passAcc: matchState.passAcc,
     note: document.getElementById('matchNote').value.trim()
   };
   matches.unshift(match);
   saveMatches();
   saveMatchToCloud(match);
   // Reset
-  matchState = {mode:matchState.mode,result:'W',goalsFor:0,goalsAgainst:0,possession:50,shots:0,shotsOnTarget:0,defErrors:0};
+  matchState = {mode:matchState.mode,result:'W',goalsFor:0,goalsAgainst:0,possession:50,shots:0,shotsOnTarget:0,defErrors:0,passes:0,passAcc:75};
   setResult('W');
   document.getElementById('matchNote').value='';
   ['goalsFor','goalsAgainst','shots','shotsOnTarget','defErrors'].forEach(f=>document.getElementById('m-'+f).textContent='0');
   document.getElementById('m-possession').textContent='50%';
+  document.getElementById('m-passAcc').textContent='75%';
+  document.getElementById('m-passes-input').value='';
   renderMatchList();
   renderMatchAnalytics();
   const t=document.getElementById('toast'); t.textContent='⚽ Match saved!'; t.classList.add('show'); setTimeout(()=>{t.classList.remove('show');t.textContent='✅ Saved!';},2200);
@@ -1347,6 +1615,7 @@ function renderMatchList(){
         <div class="match-stats-row">
           <span class="match-stat">⚽ Poss: <strong style="color:var(--accent)">${m.possession}%</strong></span>
           <span class="match-stat">🎯 Shots: <strong>${m.shotsOnTarget}/${m.shots}</strong> (${acc}%)</span>
+          ${m.passes>0?`<span class="match-stat">🔵 Passes: <strong style="color:var(--purple)">${m.passes}</strong> · ${m.passAcc}% acc</span>`:''}
           ${m.defErrors>0?`<span class="match-stat" style="color:var(--red);">⚠️ Def errors: <strong>${m.defErrors}</strong></span>`:''}
         </div>
         ${m.note?`<div style="font-size:10px;color:var(--muted);margin-top:3px;font-style:italic;">"${m.note}"</div>`:''}
@@ -1378,6 +1647,9 @@ function renderMatchAnalytics(){
   const avgDefErrors = (totalDefErrors/total).toFixed(1);
   const goalsFor = filtered.reduce((a,m)=>a+m.goalsFor,0);
   const goalsAgainst = filtered.reduce((a,m)=>a+m.goalsAgainst,0);
+  const passMatches = filtered.filter(m=>m.passes>0);
+  const avgPassAcc = passMatches.length>0 ? Math.round(passMatches.reduce((a,m)=>a+m.passAcc,0)/passMatches.length) : null;
+  const avgPasses = passMatches.length>0 ? Math.round(passMatches.reduce((a,m)=>a+m.passes,0)/passMatches.length) : null;
 
   // Color helpers
   const wrC = wr>=60?'var(--green)':wr>=40?'var(--gold)':'var(--red)';
@@ -1416,6 +1688,11 @@ function renderMatchAnalytics(){
         <div class="analytics-val" style="color:var(--red)">${(goalsAgainst/total).toFixed(1)}</div>
         <div class="analytics-lbl">Goals Conceded/Game</div>
       </div>
+      ${avgPassAcc!==null?`<div class="analytics-card">
+        <div class="analytics-val" style="color:var(--purple)">${avgPassAcc}%</div>
+        <div class="analytics-lbl">Pass Accuracy</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px;">${avgPasses} passes/game</div>
+      </div>`:''}
       <div class="analytics-card">
         <div class="analytics-val" style="color:var(--accent)">${total}</div>
         <div class="analytics-lbl">Total Matches</div>
@@ -1433,8 +1710,167 @@ function renderMatchInsights(wr, poss, acc, defErr){
   if(poss < 45) tips.push({t:'warning',txt:`Avg possession <strong>${poss}%</strong> — opponent is controlling the game more. Work on ball retention in midfield.`});
   if(acc < 30) tips.push({t:'warning',txt:`Shot accuracy <strong>${acc}%</strong> — too many shots off target. Focus on shot selection and composure in front of goal.`});
   if(defErr > 1) tips.push({t:'danger',txt:`<strong>${defErr}</strong> defensive errors per game — this is the biggest vulnerability. Slow down defensive decisions when under pressure.`});
+  if(avgPassAcc!==null && avgPassAcc < 70) tips.push({t:'warning',txt:`Pass accuracy at <strong>${avgPassAcc}%</strong> — too many lost balls. Slow down passing decisions and look for safer options under pressure.`});
 
   return tips.map(t=>`<div style="border-left:3px solid ${t.t==='good'?'var(--green)':t.t==='warning'?'var(--gold)':'var(--red)'};background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:12px;color:var(--muted);line-height:1.7;">${t.txt}</div>`).join('');
+}
+
+// ══════════════════════════════════════
+// SMART SCHEDULE ENGINE
+// ══════════════════════════════════════
+function timeToMins(t){ const [h,m]=t.split(':').map(Number); return h*60+m; }
+function minsToTime(m){
+  const totalMins = ((m % 1440) + 1440) % 1440;
+  const h = Math.floor(totalMins/60), min = totalMins%60;
+  const period = h>=12 ? 'PM' : 'AM';
+  const h12 = h===0?12:h>12?h-12:h;
+  return `${h12}:${min.toString().padStart(2,'0')} ${period}`;
+}
+function minsToTime24(m){
+  const totalMins = ((m % 1440) + 1440) % 1440;
+  const h = Math.floor(totalMins/60), min = totalMins%60;
+  return `${h.toString().padStart(2,'0')}:${min.toString().padStart(2,'0')}`;
+}
+
+function rebuildSchedule(){
+  const phase = getPhase(parseDate(selectedDate));
+  if(phase !== 'post') return; // only for post-ramadan phase
+
+  const wakeInput = document.getElementById('wakeUpInput');
+  if(!wakeInput) return;
+  const wakeTime = wakeInput.value || '09:00';
+  const wake = timeToMins(wakeTime);
+
+  const s1Dur = parseInt(document.getElementById('s1Duration')?.value || 120);
+  const s2Dur = parseInt(document.getElementById('s2Duration')?.value || 150);
+  const hasNap = document.getElementById('napToggle')?.checked ?? true;
+  const s2Early = document.getElementById('s2EarlyToggle')?.checked ?? false;
+
+  // RULES ENGINE
+  const breakfast = wake + 30;       // +30 min after wake
+  const walk      = wake + 45;       // +45 min after wake (20 min)
+  const s1Start   = wake + 150;      // +2.5 hrs after wake
+  const s1End     = s1Start + s1Dur;
+  const lunch     = s1End + 30;      // 30 min after s1
+  const napStart  = lunch + 30;
+  const napEnd    = napStart + 60;
+
+  // Session 2 timing
+  let s2Start;
+  if(s2Early){
+    s2Start = napEnd + 30; // right after nap
+  } else {
+    s2Start = timeToMins('18:30'); // default 6:30 PM
+    if(s2Start < napEnd + 60) s2Start = napEnd + 60; // min 1hr after nap
+  }
+  const s2End     = s2Start + s2Dur;
+  const reset     = s2End;
+  const gathering = s2End + 20;
+  const sleep     = timeToMins('00:30'); // 12:30 AM
+
+  // Alt walk at 17:45 if something at 17:45-18:05
+  const altWalk   = timeToMins('17:45');
+
+  // CUTOFF: nothing starts after 21:00
+  const CUTOFF = timeToMins('21:00');
+
+  // Warnings
+  const warnings = [];
+  if(wake > timeToMins('11:00')) warnings.push('⚠️ Very late wake-up — Session 1 pushed to afternoon, Session 2 may be shortened');
+  if(s2Start >= CUTOFF) warnings.push('🔴 Session 2 cannot start after 9:00 PM — consider skipping or doing a light 30-min session only');
+  else if(s2End > CUTOFF) warnings.push(`⚠️ Session 2 ends at ${minsToTime(s2End)} — cut short to stay within 9:00 PM limit`);
+  if(wake > timeToMins('10:30') && !s2Early) warnings.push('💡 Tip: Enable "Advance Session 2" to fit both sessions in today');
+
+  const warnEl = document.getElementById('scheduleWarning');
+  if(warnEl){
+    if(warnings.length){
+      warnEl.style.display='block';
+      warnEl.innerHTML = warnings.join('<br>');
+    } else {
+      warnEl.style.display='none';
+    }
+  }
+
+  // Wake warning badge
+  const warnBadge = document.getElementById('wakeWarning');
+  if(warnBadge){
+    if(wake <= timeToMins('09:30')) { warnBadge.textContent='✅ On time'; warnBadge.style.color='var(--green)'; }
+    else if(wake <= timeToMins('10:30')) { warnBadge.textContent='⚠️ Late'; warnBadge.style.color='var(--gold)'; }
+    else { warnBadge.textContent='🔴 Very late'; warnBadge.style.color='var(--red)'; }
+  }
+
+  // Build dynamic schedule
+  const dynSched = [
+    {time: minsToTime(wake),        name:'⏰ Wake Up',              note:'Hydration + light movement'},
+    {time: minsToTime(breakfast),   name:'🍳 Breakfast',            note:'Protein + light carbs'},
+    {time: `${minsToTime(walk)} – ${minsToTime(walk+20)}`, name:'🚶 Walk 20 min', note:'Daily — skip only if priority event 5:45–6:05 PM'},
+    {time:'Flexible',               name:'💼 Work (1.5 hrs)',       note:'After breakfast / after Session 1 / during gathering (max 30 min)'},
+    {time:`${minsToTime(s1Start)} – ${minsToTime(s1End)}`, name:`🎮 Session 1 (Home) — ${s1Dur/60}h`, note:'Mechanics + Ranked'},
+    {time: minsToTime(lunch),       name:'🥗 Lunch',                note:'Light meal'},
+  ];
+
+  if(hasNap){
+    dynSched.push({time:`${minsToTime(napStart)} – ${minsToTime(napEnd)}`, name:'😴 Rest', note:'Optional nap'});
+  }
+
+  // Alt walk slot
+  dynSched.push({time:`${minsToTime(altWalk)} – ${minsToTime(altWalk+20)}`, name:'🚶 Walk (alt time)', note:'Priority slot — replaces morning walk if needed', optional:true});
+
+  if(s2Start < CUTOFF){
+    const actualS2End = Math.min(s2End, CUTOFF);
+    const actualDur = Math.round((actualS2End - s2Start)/60*10)/10;
+    dynSched.push({
+      time:`${minsToTime(s2Start)} – ${minsToTime(actualS2End)}`,
+      name:`🎮 Session 2 (Twisted)${actualDur < s2Dur/60 ? ` — ${actualDur}h (cut short)` : ` — ${s2Dur/60}h`}`,
+      note: actualDur < s2Dur/60 ? 'BO3 Simulation · shortened to fit 9PM limit ⚠️' : 'BO3 Simulation'
+    });
+    dynSched.push({time:`${minsToTime(actualS2End)} – ${minsToTime(actualS2End+20)}`, name:'🧘 Reset', note:'No screens'});
+    dynSched.push({time:`${minsToTime(actualS2End+20)} – 11:30 PM`, name:'🤝 Friends Gathering', note:'Social recovery (home)'});
+  }
+
+  dynSched.push({time:'12:30 AM', name:'😴 Sleep', note:'Fixed schedule'});
+
+  // Override the schedule rendering with dynamic one
+  window._dynamicSched = dynSched;
+  renderScheduleFromList(dynSched);
+}
+
+function renderScheduleFromList(sched){
+  const list = document.getElementById('scheduleList');
+  list.innerHTML = '';
+  if(!sched || !sched.length) return;
+
+  sched.forEach((item,i)=>{
+    const status = currentChecks[i]||'none';
+    let cls='sched-item';
+    if(status==='done') cls+=' done';
+    if(status==='skipped') cls+=' skipped';
+    if(item.optional) cls+=' optional';
+    const checkIcon = status==='done'?'✓':status==='skipped'?'✕':'';
+    const div=document.createElement('div'); div.className=cls;
+    div.innerHTML=`<div class="sched-check">${checkIcon}</div><div style="flex:1"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="sched-time">${item.time}</span><span class="sched-name">${item.name}${item.optional?' <span style="font-size:9px;color:var(--muted)">(optional)</span>':''}</span></div>${item.note?`<div class="sched-note">${item.note}</div>`:''}</div>`;
+    div.onclick=()=>cycleCheck(i);
+    list.appendChild(div);
+  });
+  updateCompletionBar(sched);
+}
+
+function updateCompletionBar(sched){
+  const nonOpt = sched.filter(s=>!s.optional);
+  const doneCount = nonOpt.filter((_,i)=>{
+    const realIdx = sched.indexOf(nonOpt[i]);
+    return currentChecks[realIdx]==='done';
+  }).length;
+  const pct = nonOpt.length>0 ? Math.round(doneCount/nonOpt.length*100) : 0;
+  const bar = document.getElementById('completionBar');
+  if(bar && nonOpt.length>0){
+    bar.style.display='block';
+    document.getElementById('completionFill').style.width=pct+'%';
+    document.getElementById('completionFill').style.background=pct>=80?'var(--green)':pct>=50?'var(--gold)':'var(--red)';
+    document.getElementById('completionPct').textContent=pct+'%';
+    document.getElementById('completionPct').style.color=pct>=80?'var(--green)':pct>=50?'var(--gold)':'var(--red)';
+    document.getElementById('completionLabel').textContent=`${doneCount} of ${nonOpt.length} tasks completed`;
+  }
 }
 
 // ── TABS ──
