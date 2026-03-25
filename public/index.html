@@ -408,7 +408,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Game Mode</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;" id="gameModeRow">
           <button class="mode-btn active" onclick="setMode('Champ')">🏆 Champ</button>
-          <button class="mode-btn" onclick="setMode('Weekend')">🏅 Champs WKD</button>
           <button class="mode-btn" onclick="setMode('Rivals')">⚔️ Rivals</button>
           <button class="mode-btn" onclick="setMode('Pro')">🌟 Pro</button>
         </div>
@@ -542,7 +541,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;" id="filterRow">
         <button class="mode-btn active" onclick="setFilter('All')">All</button>
         <button class="mode-btn" onclick="setFilter('Champ')">🏆 Champ</button>
-        <button class="mode-btn" onclick="setFilter('Weekend')">🏅 WKD</button>
         <button class="mode-btn" onclick="setFilter('Rivals')">⚔️ Rivals</button>
         <button class="mode-btn" onclick="setFilter('Pro')">🌟 Pro</button>
       </div>
@@ -722,8 +720,24 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
   <!-- ═══ STATS ═══ -->
   <div class="panel" id="panel-stats">
+
+    <!-- Daily Stats Filter -->
     <div class="card">
-      <div class="card-title">📈 Full Statistics</div>
+      <div class="card-title">📅 Daily Stats</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+        <input type="date" id="statsDatePicker"
+          style="background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;flex:1;"
+          onchange="renderDailyStats()">
+        <button onclick="setStatsDate(dateKey(today()))" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:7px 14px;color:var(--muted);cursor:pointer;font-family:'Cairo',sans-serif;font-size:12px;">Today</button>
+      </div>
+      <div id="dailyStatsContent">
+        <div style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">اختاري يوم لتشوفين إحصائياته</div>
+      </div>
+    </div>
+
+    <!-- Overall Stats -->
+    <div class="card">
+      <div class="card-title">📈 Overall Statistics</div>
       <div class="stats-grid" id="statsGrid"></div>
     </div>
     <div class="card">
@@ -1260,27 +1274,70 @@ function renderCoachDashboard(s){
   } else {
     recentKeys.forEach(k=>{
       const d=s[k]; const dt=parseDate(k);
-      const p=d.played||0,w=d.wins||0;
-      const pct=p>0?Math.round(w/p*100):0;
-      const wrColor=pct>=60?'var(--green)':pct>=40?'var(--gold)':pct>0?'var(--red)':'var(--muted)';
-      const wr=p>0?`${w}W / ${p-w}L (${pct}%)`:'No games';
+      const dayMatches = matches.filter(m=>m.date===k);
+      const mTotal = dayMatches.length;
+      const mWins  = dayMatches.filter(m=>m.result==='W').length;
+      const mLosses= dayMatches.filter(m=>m.result==='L').length;
+      const mDraws = dayMatches.filter(m=>m.result==='D').length;
+      const mWR    = mTotal>0?Math.round(mWins/mTotal*100):0;
+      const mWRColor = mWR>=60?'var(--green)':mWR>=40?'var(--gold)':mTotal>0?'var(--red)':'var(--muted)';
+      const goalsFor = dayMatches.reduce((a,m)=>a+m.goalsFor,0);
+      const goalsAgainst = dayMatches.reduce((a,m)=>a+m.goalsAgainst,0);
+      const avgPoss = mTotal>0?Math.round(dayMatches.reduce((a,m)=>a+m.possession,0)/mTotal):0;
+      const totalSh = dayMatches.reduce((a,m)=>a+m.shots,0);
+      const totalOT = dayMatches.reduce((a,m)=>a+m.shotsOnTarget,0);
+      const shotAcc = totalSh>0?Math.round(totalOT/totalSh*100):0;
+      const defErr = dayMatches.reduce((a,m)=>a+m.defErrors,0);
+
       let schedText='';
-      if(d.checks){const done=Object.values(d.checks).filter(v=>v==='done').length;const tot=Object.values(d.checks).length;schedText=`Schedule: ${done}/${tot}`;}
+      if(d.checks){const done=Object.values(d.checks).filter(v=>v==='done').length;const tot=Object.values(d.checks).length;schedText=`📋 ${done}/${tot}`;}
       const isSpecial=SPECIAL_KEYS.includes(k);
+
+      let matchStatsHtml='';
+      if(mTotal>0){
+        matchStatsHtml=`
+        <div style="background:var(--surface3);border-radius:8px;padding:8px 10px;margin-top:6px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+            <span style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:${mWRColor}">${mWR}% (${mWins}W ${mDraws}D ${mLosses}L)</span>
+            <span style="font-size:11px;color:var(--green);">⚽ ${goalsFor} scored</span>
+            <span style="font-size:11px;color:var(--red);">⚽ ${goalsAgainst} conceded</span>
+            <span style="font-size:10px;color:var(--muted);">Poss: ${avgPoss}% · Shot: ${shotAcc}%${defErr>0?' · Def err: '+defErr:''}</span>
+          </div>
+          ${dayMatches.map((m,i)=>{
+            const mc=m.result==='W'?'var(--green)':m.result==='D'?'var(--gold)':'var(--red)';
+            const modeIcon=m.mode==='Champ'?'🏆':m.mode==='Rivals'?'⚔️':'🌟';
+            const photoCount=m.photoUrls&&m.photoUrls.length?m.photoUrls.length:0;
+            const photoBtn=photoCount?`<button onclick="document.getElementById('cp_${k}_${i}').style.display=document.getElementById('cp_${k}_${i}').style.display==='none'?'flex':'none'" style="background:none;border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:10px;color:var(--accent);cursor:pointer;">📸 ${photoCount}</button>`:'';
+            const photosDiv=photoCount?`<div id="cp_${k}_${i}" style="display:none;gap:5px;flex-wrap:wrap;margin-top:5px;">${m.photoUrls.map(url=>`<img src="${url}" onclick="window.open('${url}')" style="width:80px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border);">`).join('')}</div>`:'';
+            return `<div style="background:var(--surface2);border-radius:6px;padding:5px 8px;margin-bottom:4px;">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span style="color:${mc};font-weight:700;font-size:12px;">${m.result} ${m.goalsFor}-${m.goalsAgainst}</span>
+                <span style="font-size:10px;color:var(--muted);">${modeIcon}${m.division?' '+m.division:''}</span>
+                ${m.formation?`<span style="font-size:10px;color:var(--purple);">${m.formation}</span>`:''}
+                ${m.opponent?`<span style="font-size:10px;color:var(--muted);">vs ${m.opponent}</span>`:''}
+                ${m.time?`<span style="font-size:10px;color:var(--muted);">${m.time}</span>`:''}
+                ${photoBtn}
+              </div>
+              ${photosDiv}
+            </div>`;
+          }).join('')}
+        </div>`;
+      }
+
       html+=`<div class="coach-day-item" style="${isSpecial?'border-color:rgba(179,136,255,.4)':''}">
         <div class="coach-day-header">
           <span class="coach-day-date">${DAY_EN[dt.getDay()]} ${dt.getDate()} ${MON_FULL[dt.getMonth()]}${isSpecial?' 📌':''}</span>
-          <span class="coach-day-wr" style="color:${wrColor}">${wr}</span>
+          <span style="font-size:11px;color:var(--muted);">${schedText}</span>
         </div>
-        ${d.trainingHours>0?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;"><span style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:${d.trainingHours>=4?'var(--green)':d.trainingHours>=2.5?'var(--gold)':'var(--accent2)'}">🎮 ${d.trainingHours}h trained</span>${d.wakeUpTime?`<span style="font-size:10px;color:var(--muted);">Wake: ${d.wakeUpTime}</span>`:''}</div>`:''}
-        <div class="coach-day-mood">🧠 ${d.mood||'—'}  ${d.water!=null&&d.water>0?`| 💧 ${d.water}/8 glasses`:''} ${schedText?`| 📋 ${schedText}`:''}</div>
-        ${d.whoop?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">${d.whoop.recovery!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">💚 <strong style="color:${d.whoop.recovery>=67?'var(--green)':d.whoop.recovery>=34?'var(--gold)':'var(--red)'}">${d.whoop.recovery}%</strong></span>`:''}${d.whoop.sleep!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">😴 ${d.whoop.sleep}h</span>`:''}${d.whoop.hrv!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">💓 ${d.whoop.hrv}ms</span>`:''}${d.whoop.rhr!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">❤️ ${d.whoop.rhr}bpm</span>`:''}${d.whoop.spo2!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">🩸 ${d.whoop.spo2}%</span>`:''}${d.whoop.stress_s1!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">🧠 Stress: Pre ${d.whoop.stress_s1} → Post ${d.whoop.stress_s2??'—'} → Social ${d.whoop.stress_s3??'—'} → Sleep ${d.whoop.stress_s4??'—'}</span>`:''}</div>`:''}
+        ${d.trainingHours>0?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;"><span style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:${d.trainingHours>=4?'var(--green)':d.trainingHours>=2.5?'var(--gold)':'var(--accent2)'}">🎮 ${d.trainingHours}h</span>${d.wakeUpTime?`<span style="font-size:10px;color:var(--muted);">Wake: ${d.wakeUpTime}</span>`:''}</div>`:''}
+        <div class="coach-day-mood">🧠 ${d.mood||'—'} ${d.water!=null&&d.water>0?`| 💧 ${d.water}/8`:''}</div>
+        ${d.whoop?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;">${d.whoop.recovery!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">💚 <strong style="color:${d.whoop.recovery>=67?'var(--green)':d.whoop.recovery>=34?'var(--gold)':'var(--red)'}">${d.whoop.recovery}%</strong></span>`:''}${d.whoop.sleep!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">😴 ${d.whoop.sleep}h</span>`:''}${d.whoop.hrv!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">💓 ${d.whoop.hrv}ms</span>`:''}${d.whoop.rhr!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">❤️ ${d.whoop.rhr}bpm</span>`:''}${d.whoop.stress_s1!=null?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;">🧠 ${d.whoop.stress_s1}→${d.whoop.stress_s2??'—'}→${d.whoop.stress_s3??'—'}→${d.whoop.stress_s4??'—'}</span>`:''}</div>`:''}
+        ${matchStatsHtml}
         ${d.notes?`<div class="coach-day-note">"${d.notes}"</div>`:''}
       </div>`;
     });
   }
   html+='</div>';
-
   document.getElementById('coachContent').innerHTML=html;
   const t=document.getElementById('toast'); t.textContent='✅ Data loaded!'; t.classList.add('show'); setTimeout(()=>{t.classList.remove('show');t.textContent='✅ Saved!';},2500);
 }
@@ -1760,7 +1817,6 @@ function setFilter(f){
   document.querySelectorAll('#filterRow .mode-btn').forEach(b=>b.classList.toggle('active', 
     (f==='All'&&b.textContent==='All') || 
     (f==='Champ'&&b.textContent.includes('Champ')&&!b.textContent.includes('WKD')) ||
-    (f==='Weekend'&&b.textContent.includes('WKD')) ||
     (f==='Rivals'&&b.textContent.includes('Rivals')) ||
     (f==='Pro'&&b.textContent.includes('Pro'))
   ));
@@ -1897,7 +1953,7 @@ function renderMatchList(){
     const rColor = m.result==='W'?'var(--green)':m.result==='D'?'var(--gold)':'var(--red)';
     const rIcon = m.result==='W'?'✅':m.result==='D'?'🟡':'❌';
     const acc = m.shots>0 ? Math.round(m.shotsOnTarget/m.shots*100) : 0;
-    const modeBadge = m.mode==='Champ'?'🏆':m.mode==='Weekend'?'🏅':m.mode==='Rivals'?'⚔️':'🌟';
+    const modeBadge = m.mode==='Champ'?'🏆':m.mode==='Rivals'?'⚔️':'🌟';
     const divBadge = m.division ? ` · ${m.division}` : '';
     const timeStr = m.time ? ` · ${m.time}` : '';
     const photoHtml = m.photoUrls&&m.photoUrls.length ? 
@@ -2253,11 +2309,81 @@ function loadTrainingOverride(key){
     calcTrainingHours();
   }
 }
+
+// ── DAILY STATS ──
+function setStatsDate(d){
+  const el = document.getElementById('statsDatePicker');
+  if(el){ el.value = d; renderDailyStats(); }
+}
+
+function renderDailyStats(){
+  const picker = document.getElementById('statsDatePicker');
+  const box = document.getElementById('dailyStatsContent');
+  if(!picker || !picker.value || !box) return;
+
+  const dateStr = picker.value;
+  const dt = parseDate(dateStr);
+  const dayMatches = matches.filter(m=>m.date===dateStr);
+  const dayState = state[dateStr]||{};
+
+  if(!dayMatches.length && !dayState.mood && !dayState.trainingHours){
+    box.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">لا يوجد بيانات لهذا اليوم</div>';
+    return;
+  }
+
+  const total = dayMatches.length;
+  const wins  = dayMatches.filter(m=>m.result==='W').length;
+  const draws = dayMatches.filter(m=>m.result==='D').length;
+  const losses= dayMatches.filter(m=>m.result==='L').length;
+  const wr    = total>0 ? Math.round(wins/total*100) : 0;
+  const goalsFor     = dayMatches.reduce((a,m)=>a+m.goalsFor,0);
+  const goalsAgainst = dayMatches.reduce((a,m)=>a+m.goalsAgainst,0);
+  const avgPoss = total>0 ? Math.round(dayMatches.reduce((a,m)=>a+m.possession,0)/total) : 0;
+  const totalShots = dayMatches.reduce((a,m)=>a+m.shots,0);
+  const totalOnTarget = dayMatches.reduce((a,m)=>a+m.shotsOnTarget,0);
+  const shotAcc = totalShots>0 ? Math.round(totalOnTarget/totalShots*100) : 0;
+  const defErrors = dayMatches.reduce((a,m)=>a+m.defErrors,0);
+  const passMatches = dayMatches.filter(m=>m.passes>0);
+  const avgPassAcc = passMatches.length>0 ? Math.round(passMatches.reduce((a,m)=>a+m.passAcc,0)/passMatches.length) : null;
+  const wrC = wr>=60?'var(--green)':wr>=40?'var(--gold)':'var(--red)';
+
+  let html = `<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;">${DAY_EN[dt.getDay()]} ${dt.getDate()} ${MON_FULL[dt.getMonth()]}</div>`;
+
+  if(total>0){
+    html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:12px;">
+      <div class="stat-card"><div class="stat-val" style="color:${wrC}">${wr}%</div><div class="stat-lbl">Win Rate</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">${wins}W ${draws}D ${losses}L</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--green)">${goalsFor}</div><div class="stat-lbl">Goals Scored</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--red)">${goalsAgainst}</div><div class="stat-lbl">Goals Conceded</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--accent)">${avgPoss}%</div><div class="stat-lbl">Avg Possession</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--gold)">${shotAcc}%</div><div class="stat-lbl">Shot Accuracy</div></div>
+      ${avgPassAcc!==null?`<div class="stat-card"><div class="stat-val" style="color:var(--purple)">${avgPassAcc}%</div><div class="stat-lbl">Pass Accuracy</div></div>`:''}
+      <div class="stat-card"><div class="stat-val" style="color:var(--red)">${defErrors}</div><div class="stat-lbl">Def Errors</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--accent)">${total}</div><div class="stat-lbl">Matches</div></div>
+    </div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;">
+      ${dayMatches.map(m=>{const c=m.result==='W'?'var(--green)':m.result==='D'?'var(--gold)':'var(--red)';return `<div style="background:var(--surface3);border:1px solid ${c};border-radius:6px;padding:3px 8px;font-size:11px;color:${c};font-weight:700;">${m.result} ${m.goalsFor}-${m.goalsAgainst}</div>`;}).join('')}
+    </div>`;
+  }
+
+  if(dayState.mood || dayState.water || dayState.trainingHours){
+    html += `<div style="display:flex;gap:6px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--border);">
+      ${dayState.mood?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:3px 10px;font-size:11px;">🧠 ${dayState.mood}</span>`:''}
+      ${dayState.water?`<span style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:3px 10px;font-size:11px;">💧 ${dayState.water}/8</span>`:''}
+      ${dayState.trainingHours?`<span style="background:rgba(0,200,255,.1);border:1px solid rgba(0,200,255,.3);border-radius:8px;padding:3px 10px;font-size:11px;color:var(--accent);">🎮 ${dayState.trainingHours}h trained</span>`:''}
+    </div>`;
+  }
+
+  box.innerHTML = html;
+}
+
 function switchTab(name){
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['daily','matches','whoop','stats','week','coach'][i]===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+name).classList.add('active');
-  if(name==='stats')   renderStats();
+  if(name==='stats'){
+    setStatsDate(dateKey(today()));
+    renderStats();
+  }
   if(name==='week')    renderWeek();
   if(name==='whoop')   loadWhoopForDate(selectedDate);
   if(name==='matches'){ initMatchForm(); renderMatchList(); renderMatchAnalytics(); }
