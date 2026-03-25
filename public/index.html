@@ -1880,12 +1880,15 @@ async function saveMatch(){
     for(let i=0; i<files.length; i++){
       try{
         const file = files[i];
-        const fileName = `${match.id}_${i+1}.${file.name.split('.').pop()}`;
-        const {data, error} = await supa.storage.from('match-photos').upload(fileName, file, {upsert:true});
-        if(!error){
-          const {data: urlData} = supa.storage.from('match-photos').getPublicUrl(fileName);
-          match.photoUrls.push(urlData.publicUrl);
-        }
+        const ext = file.name.split('.').pop().toLowerCase() || 'jpg';
+        const fileName = `match${match.id}photo${i+1}.${ext}`;
+        const {data, error} = await supa.storage.from('match-photos').upload(fileName, file, {
+          upsert: true,
+          contentType: file.type || 'image/jpeg'
+        });
+        if(error){ console.warn('Upload error:', error.message); continue; }
+        const {data: urlData} = supa.storage.from('match-photos').getPublicUrl(fileName);
+        match.photoUrls.push(urlData.publicUrl);
       } catch(e){ console.warn('Photo upload failed:', e); }
     }
   }
