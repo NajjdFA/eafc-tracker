@@ -320,6 +320,60 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <textarea class="session-notes" id="sessionNotes" placeholder="Notes for today..."></textarea>
       <button class="save-btn" onclick="saveDay()">💾 Save Day</button>
     </div>
+
+    <!-- Training Override -->
+    <div class="card">
+      <div class="card-title">🎮 Actual Training Times</div>
+      <div style="background:rgba(0,200,255,.06);border:1px solid rgba(0,200,255,.2);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:var(--accent);">
+        لو لعبت بوقت مختلف عن الجدول — سجل الأوقات الفعلية هنا
+      </div>
+
+      <!-- Session 1 -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">🎮 Session 1</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Start</div>
+            <input type="time" id="s1-start"
+              style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;"
+              onchange="calcTrainingHours()">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">End</div>
+            <input type="time" id="s1-end"
+              style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;"
+              onchange="calcTrainingHours()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Session 2 -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">🎮 Session 2</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Start</div>
+            <input type="time" id="s2-start"
+              style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;"
+              onchange="calcTrainingHours()">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">End</div>
+            <input type="time" id="s2-end"
+              style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;"
+              onchange="calcTrainingHours()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Total -->
+      <div id="trainingCalcResult" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:12px;color:var(--muted);">Total Training Today</span>
+        <span id="trainingTotalDisplay" style="font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:var(--accent);">—</span>
+      </div>
+
+      <button class="save-btn" style="margin-top:12px;background:linear-gradient(135deg,#1a3a5c,#0d2035);" onclick="saveTrainingOverride()">💾 Save Training Times</button>
+    </div>
     <div class="sync-section">
       <div class="sync-title">📤 Share with Coach</div>
       <div class="sync-code-display" id="syncCodeDisplay">— — — —</div>
@@ -335,13 +389,38 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <div class="card">
       <div class="card-title">⚽ Log a Match</div>
 
-      <!-- Game Type -->
+      <!-- Date & Time row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">Match Date</div>
+          <input type="date" id="m-date"
+            style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;">
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">Match Time</div>
+          <input type="time" id="m-time"
+            style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:600;">
+        </div>
+      </div>
+
+      <!-- Game Mode -->
       <div style="margin-bottom:14px;">
         <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Game Mode</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;" id="gameModeRow">
           <button class="mode-btn active" onclick="setMode('Champ')">🏆 Champ</button>
+          <button class="mode-btn" onclick="setMode('Weekend')">🏅 Champs WKD</button>
           <button class="mode-btn" onclick="setMode('Rivals')">⚔️ Rivals</button>
           <button class="mode-btn" onclick="setMode('Pro')">🌟 Pro</button>
+        </div>
+        <!-- Division (Rivals only) -->
+        <div id="divisionRow" style="display:none;margin-top:8px;">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:5px;">Division</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;" id="divBtns">
+            <button class="mode-btn active" onclick="setDiv('Elite')">Elite</button>
+            <button class="mode-btn" onclick="setDiv('Div 1')">Div 1</button>
+            <button class="mode-btn" onclick="setDiv('Div 2')">Div 2</button>
+            <button class="mode-btn" onclick="setDiv('Div 3')">Div 3</button>
+          </div>
         </div>
       </div>
 
@@ -379,9 +458,22 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         </div>
       </div>
 
+      <!-- Opponent & Formation -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">Opponent (optional)</div>
+          <input type="text" id="m-opponent" placeholder="e.g. Real Madrid"
+            style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;">
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">Formation</div>
+          <input type="text" id="m-formation" placeholder="e.g. 4-3-3"
+            style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:600;">
+        </div>
+      </div>
+
       <!-- Stats Grid -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-
         <div>
           <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">Possession %</div>
           <div class="counter" style="width:100%;">
@@ -390,7 +482,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
             <button class="counter-btn" onclick="changeMatch('possession',1)">+</button>
           </div>
         </div>
-
         <div>
           <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">Shots</div>
           <div class="counter" style="width:100%;">
@@ -399,7 +490,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
             <button class="counter-btn" onclick="changeMatch('shots',1)">+</button>
           </div>
         </div>
-
         <div>
           <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">Shots on Target</div>
           <div class="counter" style="width:100%;">
@@ -408,7 +498,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
             <button class="counter-btn" onclick="changeMatch('shotsOnTarget',1)">+</button>
           </div>
         </div>
-
         <div>
           <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--red);text-transform:uppercase;margin-bottom:6px;">Goals from Def. Error</div>
           <div class="counter" style="width:100%;">
@@ -417,14 +506,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
             <button class="counter-btn" onclick="changeMatch('defErrors',1)">+</button>
           </div>
         </div>
-
         <div>
           <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--purple);text-transform:uppercase;margin-bottom:6px;">Passes</div>
           <input type="number" id="m-passes-input" min="0" max="999" placeholder="e.g. 320"
             style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--purple);font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;text-align:center;"
             oninput="matchState.passes=parseInt(this.value)||0">
         </div>
-
         <div>
           <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--purple);text-transform:uppercase;margin-bottom:6px;">Pass Accuracy %</div>
           <div class="counter" style="width:100%;">
@@ -433,13 +520,20 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
             <button class="counter-btn" onclick="changeMatch('passAcc',1)">+</button>
           </div>
         </div>
-
       </div>
 
-      <!-- Quick note -->
+      <!-- Photos upload -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">📸 Match Screenshots (max 4)</div>
+        <input type="file" id="m-photos" accept="image/*" multiple
+          style="width:100%;background:var(--surface3);border:1px dashed var(--border);border-radius:10px;padding:10px;color:var(--muted);font-family:'Cairo',sans-serif;font-size:12px;">
+        <div id="photoPreview" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
+      </div>
+
+      <!-- Note -->
       <textarea class="session-notes" id="matchNote" placeholder="Quick note about this match (optional)..." style="min-height:50px;margin-bottom:12px;"></textarea>
 
-      <button class="save-btn" onclick="saveMatch()">➕ Add Match</button>
+      <button class="save-btn" id="addMatchBtn" onclick="saveMatch()">➕ Add Match</button>
     </div>
 
     <!-- Match History -->
@@ -448,6 +542,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;" id="filterRow">
         <button class="mode-btn active" onclick="setFilter('All')">All</button>
         <button class="mode-btn" onclick="setFilter('Champ')">🏆 Champ</button>
+        <button class="mode-btn" onclick="setFilter('Weekend')">🏅 WKD</button>
         <button class="mode-btn" onclick="setFilter('Rivals')">⚔️ Rivals</button>
         <button class="mode-btn" onclick="setFilter('Pro')">🌟 Pro</button>
       </div>
@@ -882,6 +977,7 @@ function loadDayState(key){
     if(wakeEl&&d.wakeUpTime) wakeEl.value=d.wakeUpTime;
   }
   renderWater(); renderMood(); renderSchedule();
+  loadTrainingOverride(key);
 }
 
 // ── COUNTDOWN ──
@@ -1538,7 +1634,14 @@ async function saveMatchToCloud(match){
       shots: match.shots,
       shots_on_target: match.shotsOnTarget,
       def_errors: match.defErrors,
-      note: match.note||null
+      note: match.note||null,
+      passes: match.passes||0,
+      pass_acc: match.passAcc||75,
+      opponent: match.opponent||null,
+      formation: match.formation||null,
+      match_time: match.time||null,
+      division: match.division||null,
+      photo_urls: match.photoUrls||[]
     });
     if(error) throw error;
   } catch(e){ console.warn('Match sync failed:', e.message); }
@@ -1595,7 +1698,7 @@ async function loadFromCloud(){
 }
 // ══════════════════════════════════════
 let matchState = {
-  mode: 'Champ', result: 'W',
+  mode: 'Champ', result: 'W', division: 'Elite',
   goalsFor:0, goalsAgainst:0,
   possession:50, shots:0, shotsOnTarget:0, defErrors:0,
   passes:0, passAcc:75
@@ -1605,9 +1708,46 @@ let matches = JSON.parse(localStorage.getItem('eafc_matches_v1')||'[]');
 
 function saveMatches(){ localStorage.setItem('eafc_matches_v1', JSON.stringify(matches)); }
 
+// Init date/time inputs to today
+function initMatchForm(){
+  const d = document.getElementById('m-date');
+  const t = document.getElementById('m-time');
+  if(d && !d.value) d.value = selectedDate;
+  if(t && !t.value){
+    const now = new Date();
+    t.value = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  }
+  // Photo preview listener
+  const photoInput = document.getElementById('m-photos');
+  if(photoInput && !photoInput._hasListener){
+    photoInput._hasListener = true;
+    photoInput.addEventListener('change', ()=>{
+      const preview = document.getElementById('photoPreview');
+      preview.innerHTML = '';
+      Array.from(photoInput.files).slice(0,4).forEach(file=>{
+        const img = document.createElement('img');
+        img.style.cssText = 'width:70px;height:52px;object-fit:cover;border-radius:6px;border:1px solid var(--border);';
+        img.src = URL.createObjectURL(file);
+        preview.appendChild(img);
+      });
+    });
+  }
+}
+
 function setMode(m){
   matchState.mode = m;
-  document.querySelectorAll('#gameModeRow .mode-btn').forEach(b=>b.classList.toggle('active', b.textContent.includes(m)));
+  document.querySelectorAll('#gameModeRow .mode-btn').forEach(b=>{
+    const modes = {'Champ':'Champ','Weekend':'WKD','Rivals':'Rivals','Pro':'Pro'};
+    b.classList.toggle('active', Object.entries(modes).some(([k,v])=>k===m && b.textContent.includes(v)) || b.textContent.includes(m));
+  });
+  // Show division row only for Rivals
+  const divRow = document.getElementById('divisionRow');
+  if(divRow) divRow.style.display = m==='Rivals' ? 'block' : 'none';
+}
+
+function setDiv(d){
+  matchState.division = d;
+  document.querySelectorAll('#divBtns .mode-btn').forEach(b=>b.classList.toggle('active', b.textContent===d));
 }
 
 function setResult(r){
@@ -1617,8 +1757,14 @@ function setResult(r){
 
 function setFilter(f){
   matchFilter = f;
-  document.querySelectorAll('#filterRow .mode-btn').forEach(b=>b.classList.toggle('active', b.textContent.includes(f)||( f==='All'&&b.textContent==='All')));
-  renderMatchList();
+  document.querySelectorAll('#filterRow .mode-btn').forEach(b=>b.classList.toggle('active', 
+    (f==='All'&&b.textContent==='All') || 
+    (f==='Champ'&&b.textContent.includes('Champ')&&!b.textContent.includes('WKD')) ||
+    (f==='Weekend'&&b.textContent.includes('WKD')) ||
+    (f==='Rivals'&&b.textContent.includes('Rivals')) ||
+    (f==='Pro'&&b.textContent.includes('Pro'))
+  ));
+  renderMatchList(); renderMatchAnalytics();
 }
 
 function changeMatch(field, delta){
@@ -1631,11 +1777,22 @@ function changeMatch(field, delta){
   document.getElementById('m-'+field).textContent = display;
 }
 
-function saveMatch(){
+async function saveMatch(){
+  const btn = document.getElementById('addMatchBtn');
+  btn.textContent = '⏳ Saving...'; btn.disabled = true;
+
+  // Get date from input or selected date
+  const matchDate = document.getElementById('m-date')?.value || selectedDate;
+  const matchTime = document.getElementById('m-time')?.value || '';
+  const opponent  = document.getElementById('m-opponent')?.value.trim() || '';
+  const formation = document.getElementById('m-formation')?.value.trim() || '';
+
   const match = {
     id: Date.now(),
-    date: selectedDate,
+    date: matchDate,
+    time: matchTime,
     mode: matchState.mode,
+    division: matchState.mode==='Rivals' ? matchState.division : null,
     result: matchState.result,
     goalsFor: matchState.goalsFor,
     goalsAgainst: matchState.goalsAgainst,
@@ -1645,21 +1802,49 @@ function saveMatch(){
     defErrors: matchState.defErrors,
     passes: parseInt(document.getElementById('m-passes-input').value)||0,
     passAcc: matchState.passAcc,
-    note: document.getElementById('matchNote').value.trim()
+    opponent: opponent,
+    formation: formation,
+    note: document.getElementById('matchNote').value.trim(),
+    photoUrls: []
   };
+
+  // Upload photos
+  const photoInput = document.getElementById('m-photos');
+  if(photoInput && photoInput.files.length > 0){
+    const files = Array.from(photoInput.files).slice(0,4);
+    for(let i=0; i<files.length; i++){
+      try{
+        const file = files[i];
+        const fileName = `${match.id}_${i+1}.${file.name.split('.').pop()}`;
+        const {data, error} = await supa.storage.from('match-photos').upload(fileName, file, {upsert:true});
+        if(!error){
+          const {data: urlData} = supa.storage.from('match-photos').getPublicUrl(fileName);
+          match.photoUrls.push(urlData.publicUrl);
+        }
+      } catch(e){ console.warn('Photo upload failed:', e); }
+    }
+  }
+
   matches.unshift(match);
   saveMatches();
   saveMatchToCloud(match);
-  // Reset
-  matchState = {mode:matchState.mode,result:'W',goalsFor:0,goalsAgainst:0,possession:50,shots:0,shotsOnTarget:0,defErrors:0,passes:0,passAcc:75};
+
+  // Reset form
+  matchState = {mode:matchState.mode, result:'W', division:matchState.division,
+    goalsFor:0, goalsAgainst:0, possession:50, shots:0, shotsOnTarget:0, defErrors:0, passes:0, passAcc:75};
   setResult('W');
   document.getElementById('matchNote').value='';
+  document.getElementById('m-opponent').value='';
+  document.getElementById('m-formation').value='';
+  if(photoInput) photoInput.value='';
+  document.getElementById('photoPreview').innerHTML='';
   ['goalsFor','goalsAgainst','shots','shotsOnTarget','defErrors'].forEach(f=>document.getElementById('m-'+f).textContent='0');
   document.getElementById('m-possession').textContent='50%';
   document.getElementById('m-passAcc').textContent='75%';
   document.getElementById('m-passes-input').value='';
-  renderMatchList();
-  renderMatchAnalytics();
+
+  btn.textContent='➕ Add Match'; btn.disabled=false;
+  renderMatchList(); renderMatchAnalytics();
   const t=document.getElementById('toast'); t.textContent='⚽ Match saved!'; t.classList.add('show'); setTimeout(()=>{t.classList.remove('show');t.textContent='✅ Saved!';},2200);
 }
 
@@ -1712,22 +1897,31 @@ function renderMatchList(){
     const rColor = m.result==='W'?'var(--green)':m.result==='D'?'var(--gold)':'var(--red)';
     const rIcon = m.result==='W'?'✅':m.result==='D'?'🟡':'❌';
     const acc = m.shots>0 ? Math.round(m.shotsOnTarget/m.shots*100) : 0;
-    const modeBadge = m.mode==='Champ'?'🏆':m.mode==='Rivals'?'⚔️':'🌟';
+    const modeBadge = m.mode==='Champ'?'🏆':m.mode==='Weekend'?'🏅':m.mode==='Rivals'?'⚔️':'🌟';
+    const divBadge = m.division ? ` · ${m.division}` : '';
+    const timeStr = m.time ? ` · ${m.time}` : '';
+    const photoHtml = m.photoUrls&&m.photoUrls.length ? 
+      `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">
+        ${m.photoUrls.map(url=>`<img src="${url}" onclick="window.open('${url}')" style="width:60px;height:45px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border);">`).join('')}
+      </div>` : '';
     return `<div class="match-item">
       <span class="match-result" style="color:${rColor}">${rIcon}</span>
       <span class="match-score" style="color:${rColor}">${m.goalsFor}–${m.goalsAgainst}</span>
       <div style="flex:1;">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <span class="match-badge" style="background:var(--surface3);border:1px solid var(--border);color:var(--muted);">${modeBadge} ${m.mode}</span>
-          <span style="font-size:10px;color:var(--muted);">${DAY_EN[dt.getDay()]} ${dt.getDate()} ${MON_EN[dt.getMonth()]}</span>
+          <span class="match-badge" style="background:var(--surface3);border:1px solid var(--border);color:var(--muted);">${modeBadge} ${m.mode}${divBadge}</span>
+          ${m.formation?`<span style="font-size:10px;background:rgba(179,136,255,.15);color:var(--purple);padding:1px 6px;border-radius:6px;font-weight:700;">${m.formation}</span>`:''}
+          <span style="font-size:10px;color:var(--muted);">${DAY_EN[dt.getDay()]} ${dt.getDate()} ${MON_EN[dt.getMonth()]}${timeStr}</span>
         </div>
+        ${m.opponent?`<div style="font-size:11px;color:var(--muted);margin-top:2px;">vs ${m.opponent}</div>`:''}
         <div class="match-stats-row">
           <span class="match-stat">⚽ Poss: <strong style="color:var(--accent)">${m.possession}%</strong></span>
           <span class="match-stat">🎯 Shots: <strong>${m.shotsOnTarget}/${m.shots}</strong> (${acc}%)</span>
-          ${m.passes>0?`<span class="match-stat">🔵 Passes: <strong style="color:var(--purple)">${m.passes}</strong> · ${m.passAcc}% acc</span>`:''}
-          ${m.defErrors>0?`<span class="match-stat" style="color:var(--red);">⚠️ Def errors: <strong>${m.defErrors}</strong></span>`:''}
+          ${m.passes>0?`<span class="match-stat">🔵 Pass: <strong style="color:var(--purple)">${m.passAcc}%</strong></span>`:''}
+          ${m.defErrors>0?`<span class="match-stat" style="color:var(--red);">⚠️ Def: <strong>${m.defErrors}</strong></span>`:''}
         </div>
         ${m.note?`<div style="font-size:10px;color:var(--muted);margin-top:3px;font-style:italic;">"${m.note}"</div>`:''}
+        ${photoHtml}
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;">
         <button onclick="editMatch(${m.id})" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--accent);cursor:pointer;font-size:11px;padding:3px 8px;font-family:'Cairo',sans-serif;">✏️</button>
@@ -1985,7 +2179,80 @@ function updateCompletionBar(sched){
   }
 }
 
-// ── TABS ──
+// ── TRAINING OVERRIDE ──
+function calcTrainingHours(){
+  const s1s = document.getElementById('s1-start')?.value;
+  const s1e = document.getElementById('s1-end')?.value;
+  const s2s = document.getElementById('s2-start')?.value;
+  const s2e = document.getElementById('s2-end')?.value;
+
+  let total = 0;
+  const sessions = [];
+
+  if(s1s && s1e){
+    const dur = calcDuration(s1s, s1e);
+    if(dur > 0){ total += dur; sessions.push({name:'Session 1', start:s1s, end:s1e, mins:dur}); }
+  }
+  if(s2s && s2e){
+    const dur = calcDuration(s2s, s2e);
+    if(dur > 0){ total += dur; sessions.push({name:'Session 2', start:s2s, end:s2e, mins:dur}); }
+  }
+
+  const resultEl = document.getElementById('trainingCalcResult');
+  const totalEl  = document.getElementById('trainingTotalDisplay');
+  if(total > 0 && resultEl && totalEl){
+    resultEl.style.display = 'flex';
+    const hrs = Math.floor(total/60);
+    const mins = total%60;
+    totalEl.textContent = hrs>0 ? `${hrs}h ${mins>0?mins+'m':''}` : `${mins}m`;
+    totalEl.style.color = total>=240?'var(--green)':total>=150?'var(--gold)':'var(--accent)';
+  }
+
+  window._trainingOverride = {total: Math.round(total/60*10)/10, sessions};
+}
+
+function calcDuration(start, end){
+  const [sh,sm] = start.split(':').map(Number);
+  const [eh,em] = end.split(':').map(Number);
+  let dur = (eh*60+em) - (sh*60+sm);
+  if(dur < 0) dur += 1440;
+  return dur;
+}
+
+function saveTrainingOverride(){
+  if(!window._trainingOverride || !window._trainingOverride.total) return;
+  if(!state[selectedDate]) state[selectedDate]={};
+  state[selectedDate].trainingHours = window._trainingOverride.total;
+  state[selectedDate].trainingSessions = window._trainingOverride.sessions;
+  saveState();
+  saveToCloud(selectedDate, state[selectedDate]);
+  const t=document.getElementById('toast');
+  t.textContent=`🎮 ${window._trainingOverride.total}h saved!`;
+  t.classList.add('show'); setTimeout(()=>{t.classList.remove('show');t.textContent='✅ Saved!';},2500);
+}
+
+function loadTrainingOverride(key){
+  const d = state[key]||{};
+  // Clear inputs
+  ['s1-start','s1-end','s2-start','s2-end'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  // Load saved sessions
+  if(d.trainingSessions && d.trainingSessions.length){
+    const s1 = d.trainingSessions.find(s=>s.name==='Session 1');
+    const s2 = d.trainingSessions.find(s=>s.name==='Session 2');
+    if(s1){
+      if(document.getElementById('s1-start')) document.getElementById('s1-start').value = s1.start||'';
+      if(document.getElementById('s1-end'))   document.getElementById('s1-end').value   = s1.end||'';
+    }
+    if(s2){
+      if(document.getElementById('s2-start')) document.getElementById('s2-start').value = s2.start||'';
+      if(document.getElementById('s2-end'))   document.getElementById('s2-end').value   = s2.end||'';
+    }
+    calcTrainingHours();
+  }
+}
 function switchTab(name){
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['daily','matches','whoop','stats','week','coach'][i]===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -1993,7 +2260,7 @@ function switchTab(name){
   if(name==='stats')   renderStats();
   if(name==='week')    renderWeek();
   if(name==='whoop')   loadWhoopForDate(selectedDate);
-  if(name==='matches'){ renderMatchList(); renderMatchAnalytics(); }
+  if(name==='matches'){ initMatchForm(); renderMatchList(); renderMatchAnalytics(); }
 }
 
 function init(){
