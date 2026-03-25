@@ -1882,12 +1882,12 @@ async function saveMatch(){
         const file = files[i];
         const ext = file.name.split('.').pop().toLowerCase() || 'jpg';
         const fileName = `match${match.id}photo${i+1}.${ext}`;
-        const {data, error} = await supa.storage.from('match-photos').upload(fileName, file, {
+        const {data, error} = await supa.storage.from('Match-Photos').upload(fileName, file, {
           upsert: true,
           contentType: file.type || 'image/jpeg'
         });
         if(error){ console.warn('Upload error:', error.message); continue; }
-        const {data: urlData} = supa.storage.from('match-photos').getPublicUrl(fileName);
+        const {data: urlData} = supa.storage.from('Match-Photos').getPublicUrl(fileName);
         match.photoUrls.push(urlData.publicUrl);
       } catch(e){ console.warn('Photo upload failed:', e); }
     }
