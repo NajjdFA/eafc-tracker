@@ -209,7 +209,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <button class="tab" onclick="switchTab('whoop')">💚 Whoop</button>
     <button class="tab" onclick="switchTab('stats')">📊 Stats</button>
     <button class="tab" onclick="switchTab('week')">📆 Week</button>
-    <button class="tab" onclick="switchTab('coach')">👁 Coach</button>
+    <button class="tab" onclick="switchTab('coachtasks')">📋 Coach</button>
+    <button class="tab" onclick="switchTab('coach')">👁 Log</button>
   </div>
 
   <!-- ═══ DAILY ═══ -->
@@ -715,6 +716,14 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <div class="card">
       <div class="card-title">😴 14-Day Sleep Trend</div>
       <div id="sleepTrend" style="display:flex;align-items:flex-end;gap:3px;height:80px;"></div>
+    </div>
+  </div>
+
+  <!-- ═══ COACH TASKS ═══ -->
+  <div class="panel" id="panel-coachtasks">
+    <div class="card">
+      <div class="card-title">📋 Tasks from Coach</div>
+      <div id="playerTasksList"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">Loading tasks...</div></div>
     </div>
   </div>
 
@@ -2310,7 +2319,71 @@ function loadTrainingOverride(key){
   }
 }
 
-// ── DAILY STATS ──
+// ── PLAYER TASKS ──
+async function loadPlayerTasks(){
+  try{
+    const {data, error} = await supa.from('training_tasks').select('*').order('created_at',{ascending:false});
+    if(error) throw error;
+    renderPlayerTasks(data||[]);
+  } catch(e){
+    document.getElementById('playerTasksList').innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">Could not load tasks</div>';
+  }
+}
+
+function renderPlayerTasks(tasks){
+  const box = document.getElementById('playerTasksList');
+  if(!tasks.length){
+    box.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">No tasks assigned yet 🎯</div>';
+    return;
+  }
+
+  box.innerHTML = tasks.map(task=>{
+    const hasProof = task.player_proof_url;
+    const isDone   = task.status==='done';
+    const ytMatch  = task.video_url?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+    const ytEmbed  = ytMatch?`<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;margin:8px 0;"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:10px;"></iframe></div>`:'';
+
+    return `<div style="background:var(--surface2);border:1px solid ${isDone?'rgba(0,230,118,.3)':hasProof?'rgba(179,136,255,.3)':'var(--border)'};border-radius:10px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px;">
+        <div style="font-size:14px;font-weight:700;">${task.title}</div>
+        <span style="font-size:10px;padding:3px 10px;border-radius:10px;font-weight:700;white-space:nowrap;${isDone?'background:rgba(0,230,118,.15);color:var(--green);':hasProof?'background:rgba(179,136,255,.15);color:var(--purple);':'background:rgba(255,193,7,.15);color:var(--gold);'}">${isDone?'✅ Done':hasProof?'📎 Submitted':'⏳ Pending'}</span>
+      </div>
+      ${task.task_date?`<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">📅 Target: ${task.task_date}</div>`:''}
+      ${task.description?`<div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.6;">${task.description}</div>`:''}
+      ${ytEmbed}
+      ${!ytEmbed&&task.video_url?`<a href="${task.video_url}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:11px;color:var(--accent);text-decoration:none;margin-bottom:8px;">🔗 View Reference</a>`:''}
+
+      ${task.coach_feedback?`<div style="background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.2);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12px;"><strong style="color:var(--accent);">💬 Coach:</strong> ${task.coach_feedback}</div>`:''}
+
+      ${hasProof?`<div style="background:rgba(179,136,255,.08);border:1px solid rgba(179,136,255,.2);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12px;">
+        <div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:3px;">📎 Your proof:</div>
+        <a href="${task.player_proof_url}" target="_blank" style="color:var(--accent);font-size:11px;word-break:break-all;">${task.player_proof_url}</a>
+        ${task.player_response?`<div style="font-size:11px;color:var(--muted);margin-top:4px;">"${task.player_response}"</div>`:''}
+      </div>`:''}
+
+      ${!isDone?`<div style="margin-top:8px;">
+        <input type="url" id="proof_url_${task.id}" placeholder="Link to your proof (YouTube, clip, etc.)" 
+          value="${task.player_proof_url||''}"
+          style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Cairo',sans-serif;font-size:12px;width:100%;margin-bottom:6px;">
+        <input type="text" id="proof_note_${task.id}" placeholder="Add a note (optional)"
+          value="${task.player_response||''}"
+          style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Cairo',sans-serif;font-size:12px;width:100%;margin-bottom:6px;">
+        <button onclick="submitProof(${task.id})" style="background:linear-gradient(135deg,var(--purple),#7c4dff);border:none;border-radius:8px;padding:8px 18px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">📎 Submit Proof</button>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+async function submitProof(taskId){
+  const url  = document.getElementById('proof_url_'+taskId)?.value.trim();
+  const note = document.getElementById('proof_note_'+taskId)?.value.trim();
+  if(!url){ const t=document.getElementById('toast'); t.textContent='⚠️ Add a link first'; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); return; }
+  try{
+    await supa.from('training_tasks').update({player_proof_url:url, player_response:note||null}).eq('id',taskId);
+    const t=document.getElementById('toast'); t.textContent='📎 Proof submitted!'; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500);
+    loadPlayerTasks();
+  } catch(e){ console.error(e); }
+}
 function setStatsDate(d){
   const el = document.getElementById('statsDatePicker');
   if(el){ el.value = d; renderDailyStats(); }
@@ -2377,16 +2450,17 @@ function renderDailyStats(){
 }
 
 function switchTab(name){
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['daily','matches','whoop','stats','week','coach'][i]===name));
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['daily','matches','whoop','stats','week','coachtasks','coach'][i]===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+name).classList.add('active');
   if(name==='stats'){
     setStatsDate(dateKey(today()));
     renderStats();
   }
-  if(name==='week')    renderWeek();
-  if(name==='whoop')   loadWhoopForDate(selectedDate);
-  if(name==='matches'){ initMatchForm(); renderMatchList(); renderMatchAnalytics(); }
+  if(name==='week')       renderWeek();
+  if(name==='whoop')      loadWhoopForDate(selectedDate);
+  if(name==='matches'){   initMatchForm(); renderMatchList(); renderMatchAnalytics(); }
+  if(name==='coachtasks') loadPlayerTasks();
 }
 
 function init(){
