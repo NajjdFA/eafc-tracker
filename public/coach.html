@@ -118,6 +118,7 @@ textarea{min-height:80px;resize:vertical;}
     <button class="tab" onclick="switchTab('daily')">📅 Daily Log</button>
     <button class="tab" onclick="switchTab('matches')">⚽ Matches</button>
     <button class="tab" onclick="switchTab('tasks')">📋 Tasks</button>
+    <button class="tab" onclick="switchTab('challenges')">🏅 Challenges</button>
     <button class="tab" onclick="switchTab('add')">➕ Add Task</button>
   </div>
 
@@ -206,6 +207,15 @@ textarea{min-height:80px;resize:vertical;}
 
 </div>
 
+  <!-- CHALLENGES PANEL -->
+  <div class="panel" id="panel-challenges">
+    <div class="card">
+      <div class="card-title">🏅 Challenge Schedule</div>
+      <div id="coachChallengeContent"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+
 <div class="toast" id="toast">✅ Saved!</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -289,10 +299,97 @@ async function loadAll(){
 }
 
 // ── TABS ──
+
+function dateKey(d){
+  const sa = new Date(d.getTime() + (3*60*60*1000));
+  return sa.toISOString().slice(0,10);
+}
+function today(){
+  const now = new Date();
+  const saNow = new Date(now.getTime() + (3*60*60*1000));
+  const str = saNow.toISOString().slice(0,10);
+  const [y,m,dd] = str.split('-').map(Number);
+  return new Date(y, m-1, dd);
+}
+
+function renderCoachChallenges(){
+  var box = document.getElementById('coachChallengeContent');
+  if(!box) return;
+
+  var allDays = [
+    {date:'2026-03-28', label:'Sat 28 Mar', games:20, wins:10},
+    {date:'2026-03-29', label:'Sun 29 Mar', games:20, wins:12},
+    {date:'2026-03-30', label:'Mon 30 Mar', games:20, wins:14},
+    {date:'2026-03-31', label:'Tue 31 Mar', games:20, wins:16},
+    {date:'2026-04-05', label:'Sun 5 Apr',  games:20, wins:18},
+    {date:'2026-04-06', label:'Mon 6 Apr',  games:20, wins:19},
+    {date:'2026-04-07', label:'Tue 7 Apr',  games:20, wins:20},
+  ];
+
+  var todayKey = dateKey(today());
+  var totalDays=0, successDays=0;
+  var html = '';
+
+  allDays.forEach(function(day){
+    var dayMatches = allMatches.filter(function(m){ return m.date===day.date; });
+    var played  = dayMatches.length;
+    var wins    = dayMatches.filter(function(m){ return m.result==='W'; }).length;
+    var gFor    = dayMatches.reduce(function(a,m){ return a+m.goalsFor; }, 0);
+    var gAg     = dayMatches.reduce(function(a,m){ return a+m.goalsAgainst; }, 0);
+    var goalTgt = gAg*2;
+    var isToday = day.date===todayKey;
+    var isPast  = day.date<todayKey;
+    var isFuture= day.date>todayKey;
+    var gamesOK = played>=day.games;
+    var winsOK  = wins>=day.wins;
+    var goalsOK = goalTgt===0 ? null : gFor>=goalTgt;
+    var allOK   = gamesOK && winsOK && (goalsOK!==false);
+
+    if(isPast && played>0) totalDays++;
+    if(isPast && allOK) successDays++;
+
+    var borderC = isToday?'rgba(255,107,53,.4)':allOK&&isPast?'rgba(0,230,118,.3)':isPast&&played>0?'rgba(255,193,7,.3)':'var(--border)';
+    var statusIcon = isFuture?'🔒':allOK?'✅':isPast&&played>0?'⚠️':isPast?'❌':'🎯';
+
+    html += '<div style="background:var(--surface2);border:1px solid '+borderC+';border-radius:10px;padding:12px 14px;margin-bottom:8px;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:'+(played>0?'10px':'0')+';">';
+    html += '<div><span style="font-size:13px;font-weight:700;color:'+(isToday?'var(--accent2)':'var(--text)')+';">'+statusIcon+' '+day.label+(isToday?' — TODAY':'')+'</span>';
+    html += '<div style="font-size:10px;color:var(--muted);margin-top:2px;">Target: '+day.games+' games · '+day.wins+' wins · score double conceded</div></div>';
+    if(played>0) html += '<span style="font-family:Rajdhani,sans-serif;font-size:16px;font-weight:700;color:'+(allOK?'var(--green)':'var(--gold)')+';">'+wins+'W/'+played+'G</span>';
+    html += '</div>';
+
+    if(played>0){
+      var gC=played>=day.games?'var(--green)':'var(--gold)';
+      var wC=wins>=day.wins?'var(--green)':'var(--gold)';
+      var goC=goalTgt===0?'var(--muted)':gFor>=goalTgt?'var(--green)':'var(--gold)';
+      html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">';
+      html += '<div style="background:var(--surface3);border-radius:8px;padding:6px 8px;text-align:center;"><div style="font-size:9px;color:var(--muted);">Games</div><div style="font-family:Rajdhani,sans-serif;font-size:16px;font-weight:700;color:'+gC+';">'+played+'/'+day.games+'</div></div>';
+      html += '<div style="background:var(--surface3);border-radius:8px;padding:6px 8px;text-align:center;"><div style="font-size:9px;color:var(--muted);">Wins</div><div style="font-family:Rajdhani,sans-serif;font-size:16px;font-weight:700;color:'+wC+';">'+wins+'/'+day.wins+'</div></div>';
+      html += '<div style="background:var(--surface3);border-radius:8px;padding:6px 8px;text-align:center;"><div style="font-size:9px;color:var(--muted);">Scored</div><div style="font-family:Rajdhani,sans-serif;font-size:16px;font-weight:700;color:var(--green);">'+gFor+'</div></div>';
+      html += '<div style="background:var(--surface3);border-radius:8px;padding:6px 8px;text-align:center;"><div style="font-size:9px;color:var(--muted);">Goal Tgt</div><div style="font-family:Rajdhani,sans-serif;font-size:16px;font-weight:700;color:'+goC+';">'+gFor+'/'+(goalTgt||'—')+'</div></div>';
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+
+  var summary = '';
+  if(totalDays>0){
+    var rate = Math.round(successDays/totalDays*100);
+    summary = '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;gap:12px;flex-wrap:wrap;">';
+    summary += '<div style="text-align:center;flex:1;"><div style="font-family:Rajdhani,sans-serif;font-size:22px;font-weight:700;color:var(--green);">'+successDays+'/'+totalDays+'</div><div style="font-size:10px;color:var(--muted);">Days Completed</div></div>';
+    summary += '<div style="text-align:center;flex:1;"><div style="font-family:Rajdhani,sans-serif;font-size:22px;font-weight:700;color:'+(rate>=70?'var(--green)':'var(--gold)')+';">'+rate+'%</div><div style="font-size:10px;color:var(--muted);">Success Rate</div></div>';
+    summary += '</div>';
+  }
+
+  box.innerHTML = summary + html;
+}
+
+
 function switchTab(name){
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['overview','daily','matches','tasks','add'][i]===name));
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['overview','daily','matches','tasks','challenges','add'][i]===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+name).classList.add('active');
+  if(name==='challenges') renderCoachChallenges();
 }
 
 // ── OVERVIEW ──
