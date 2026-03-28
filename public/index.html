@@ -209,6 +209,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <button class="tab" onclick="switchTab('whoop')">💚 Whoop</button>
     <button class="tab" onclick="switchTab('stats')">📊 Stats</button>
     <button class="tab" onclick="switchTab('week')">📆 Week</button>
+    <button class="tab" onclick="switchTab('challenges')">🏅 Challenges</button>
     <button class="tab" onclick="switchTab('coachtasks')">📋 Coach</button>
     <button class="tab" onclick="switchTab('coach')">👁 Log</button>
   </div>
@@ -719,6 +720,27 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     </div>
   </div>
 
+  <!-- ═══ CHALLENGES ═══ -->
+  <div class="panel" id="panel-challenges">
+
+    <!-- Today's Target -->
+    <div class="card" id="dailyTargetCard">
+      <div class="card-title">🎯 Today's Target</div>
+      <div id="dailyTargetContent">
+        <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">
+          التحديات تبدأ من 28 مارس 🔥
+        </div>
+      </div>
+    </div>
+
+    <!-- Full Challenge Schedule -->
+    <div class="card">
+      <div class="card-title">📅 Challenge Schedule</div>
+      <div id="challengeSchedule"></div>
+    </div>
+
+  </div>
+
   <!-- ═══ COACH TASKS ═══ -->
   <div class="panel" id="panel-coachtasks">
     <div class="card">
@@ -803,15 +825,26 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 const TOURNAMENT_DATE = new Date('2026-04-08');
 const START_DATE      = new Date('2026-03-21');
 
-function dateKey(d){ return d.toISOString().slice(0,10); }
+function dateKey(d){
+  const sa = new Date(d.getTime() + (3*60*60*1000));
+  return sa.toISOString().slice(0,10);
+}
 function parseDate(k){ const [y,m,d]=k.split('-').map(Number); return new Date(y,m-1,d); }
-function today(){ const n=new Date(); return new Date(n.getFullYear(),n.getMonth(),n.getDate()); }
+function today(){
+  const now = new Date();
+  const saNow = new Date(now.getTime() + (3*60*60*1000));
+  const str = saNow.toISOString().slice(0,10);
+  const [y,m,dd] = str.split('-').map(Number);
+  return new Date(y, m-1, dd);
+}
 
 // ── Phase detection ──
 function getPhase(d){
   const t=d.getTime();
-  if(t<=new Date('2026-03-31').getTime()) return 'post';
-  if(t<=new Date('2026-04-07').getTime()) return 'finals';
+  if(t<=new Date('2026-03-27').getTime()) return 'post';
+  if(t<=new Date('2026-03-31').getTime()) return 'intensive';
+  if(t<=new Date('2026-04-04').getTime()) return 'finals';
+  if(t<=new Date('2026-04-07').getTime()) return 'intensive';
   if(t<=new Date('2026-04-08').getTime()) return 'tournament';
   return 'after';
 }
@@ -839,62 +872,75 @@ const SPECIAL_DATES = {
       sleep:{time:'12:30 - 1:00 AM', name:'😴 Sleep', note:'Max 1:00 AM tonight ⚠️'}
     }
   },
-  '2026-04-01':{notice:{title:'🏆 EAFC Tournament — Apr 1–4',items:['No Session 2 these days','4:30–8:30 PM: Attend EAFC tournament','Light session 10:00–11:30 PM','Goal: Watch · Analyze · Prepare']},special_finals:true},
-  '2026-04-02':{notice:{title:'🏆 EAFC Tournament Day 2',items:['No Session 2','4:30–8:30 PM: Tournament','Light session 10:00–11:30 PM']},special_finals:true},
-  '2026-04-03':{notice:{title:'🏆 EAFC Tournament Day 3',items:['No Session 2','4:30–8:30 PM: Tournament','Light session 10:00–11:30 PM']},special_finals:true},
-  '2026-04-04':{notice:{title:'🏆 EAFC Tournament Day 4',items:['No Session 2','4:30–8:30 PM: Tournament','Light session 10:00–11:30 PM']},special_finals:true},
+  '2026-04-01':{notice:{title:'🏟 EAFC Tournament Day 1 — حضور',items:['Session 1: 11:30 AM - 1:30 PM (قبل البطولة)','الغداء: 2:00 PM ثابت','3:30 PM: جاهز للخروج','4:30–8:30 PM: حضور البطولة 🔥','Light session بعد العشاء (اختياري)']},special_finals:true},
+  '2026-04-02':{notice:{title:'🏟 EAFC Tournament Day 2',items:['Session 1: 11:30 AM - 1:30 PM','الغداء: 2:00 PM','3:30 PM: جاهز','4:30–8:30 PM: البطولة','Light session بالليل']},special_finals:true},
+  '2026-04-03':{notice:{title:'🏟 EAFC Tournament Day 3',items:['Session 1: 11:30 AM - 1:30 PM','الغداء: 2:00 PM','3:30 PM: جاهز','4:30–8:30 PM: البطولة','Light session بالليل']},special_finals:true},
+  '2026-04-04':{notice:{title:'🏟 EAFC Tournament Day 4 (آخر يوم حضور)',items:['Session 1: 11:30 AM - 1:30 PM','الغداء: 2:00 PM','3:30 PM: جاهز','4:30–8:30 PM: البطولة','Light session بالليل']},special_finals:true},
 };
 
 // ── Base schedules ──
 const BASE_POST = [
-  {time:'9:00 AM',  name:'⏰ Wake Up', note:'Hydration + light movement'},
-  {time:'9:30 AM',  name:'🍳 Breakfast', note:'Protein + light carbs'},
-  {time:'9:45 - 10:05 AM', name:'🚶 Walk 20 min', note:'Do this daily unless priority event 5:45–6:05 PM'},
-  {time:'Flexible', name:'💼 Work (1.5 hrs)', note:'After breakfast / after Session 1 / during gathering (max 30 min) — never affects training or sleep'},
-  {time:'11:30 AM - 2:00 PM', name:'🎮 Session 1 (Home)', note:'Mechanics + Ranked'},
-  {time:'2:30 PM',  name:'🥗 Lunch', note:'Light meal'},
-  {time:'3:30 - 4:30 PM', name:'😴 Rest', note:'Optional nap'},
-  {time:'5:45 - 6:05 PM', name:'🚶 Walk 20 min (alt)', note:'Priority if something at this time — replaces morning walk'},
-  {time:'6:30 - 9:00 PM', name:'🎮 Session 2 (Twisted)', note:'BO3 Simulation'},
-  {time:'9:00 - 9:20 PM', name:'🧘 Reset', note:'No screens'},
-  {time:'9:30 - 11:30 PM', name:'🤝 Friends Gathering', note:'Social recovery (home)'},
+  {time:'10:00 AM', name:'⏰ Wake Up', note:'Hydration + light movement'},
+  {time:'11:00 AM', name:'🍳 Breakfast', note:'Protein + light carbs'},
+  {time:'11:15 - 11:35 AM', name:'🚶 Walk 20 min', note:'Daily activation'},
+  {time:'Flexible', name:'💼 Work (1.5 hrs)', note:'After breakfast / after Session 1 / during gathering (max 30 min)'},
+  {time:'11:30 AM - 1:30 PM', name:'🎮 Session 2 (Home)', note:'اختياري — لو ما في شغل · Mechanics + Ranked', optional:true},
+  {time:'2:00 PM', name:'🥗 Lunch', note:'Fixed — always 2:00 PM'},
+  {time:'3:00 - 7:00 PM', name:'🎮 Session 1 الأساسية', note:'الجلسة الرئيسية · 4 ساعات · Target: 10+ games'},
+  {time:'7:00 - 7:20 PM', name:'🧘 Reset', note:'No screens — mental reset'},
+  {time:'7:30 PM', name:'🤝 Friends Gathering / راحة', note:'Social recovery'},
+  {time:'10:00 PM', name:'🍽 Dinner', note:'Fixed — always 10:00 PM'},
+  {time:'10:30 PM - 12:30 AM', name:'🎮 Session 3 الليلية', note:'اختياري — لو ما في إرهاق · 10+ games', optional:true},
+  {time:'12:30 AM', name:'😴 Sleep', note:'Fixed schedule'},
+];
+
+const BASE_INTENSIVE = [
+  {time:'10:00 AM', name:'⏰ Wake Up', note:'Hydration + light movement'},
+  {time:'11:00 AM', name:'🍳 Breakfast', note:'Protein + light carbs'},
+  {time:'11:15 - 11:35 AM', name:'🚶 Walk 20 min', note:'Daily activation'},
+  {time:'11:30 AM - 1:30 PM', name:'🎮 Session 2 (Home)', note:'اختياري — لو ما في شغل · Mechanics + Ranked', optional:true},
+  {time:'2:00 PM', name:'🥗 Lunch', note:'Fixed — always 2:00 PM'},
+  {time:'3:00 - 7:00 PM', name:'🎮 Session 1 الأساسية', note:'الجلسة الرئيسية · 4 ساعات · Target: 10+ games 🎯'},
+  {time:'7:00 - 7:20 PM', name:'🧘 Reset', note:'No screens — mental reset'},
+  {time:'7:30 PM', name:'🤝 Friends Gathering / راحة', note:'Social recovery'},
+  {time:'10:00 PM', name:'🍽 Dinner', note:'Fixed — always 10:00 PM'},
+  {time:'10:30 PM - 12:30 AM', name:'🎮 Session 3 الليلية', note:'اختياري — لو ما في إرهاق · 10+ games', optional:true},
   {time:'12:30 AM', name:'😴 Sleep', note:'Fixed schedule'},
 ];
 
 const BASE_FINALS = [
-  {time:'8:00 AM',  name:'⏰ Wake Up', note:''},
-  {time:'8:30 AM',  name:'🍳 Breakfast', note:''},
-  {time:'8:50 - 9:10 AM', name:'🚶 Walk 20 min', note:'Daily — skip only if priority event 5:45–6:05 PM'},
-  {time:'Flexible', name:'💼 Work (1.5 hrs)', note:'Flexible — never affects training or sleep'},
-  {time:'9:30 - 10:30 AM', name:'🎮 Warmup — 1 hr only', note:'Warmup, not fatigue'},
-  {time:'11:00 AM - 1:00 PM', name:'🏢 Work / Rest', note:''},
-  {time:'1:00 - 3:00 PM', name:'🥗 Lunch + Rest', note:''},
-  {time:'3:00 - 4:00 PM', name:'🎮 Session 2 — 1 hr only', note:'Strengths only'},
-  {time:'5:45 - 6:05 PM', name:'🚶 Walk (alt)', note:'If priority event at this time'},
-  {time:'4:00 - 9:00 PM', name:'🤝 Friends Gathering', note:'Full mental recharge ✅'},
-  {time:'11:30 PM', name:'😴 Sleep — fixed', note:''},
+  {time:'10:00 AM', name:'⏰ Wake Up', note:''},
+  {time:'11:00 AM', name:'🍳 Breakfast', note:'Fixed'},
+  {time:'11:15 - 11:35 AM', name:'🚶 Walk 20 min', note:'Daily activation'},
+  {time:'11:30 AM - 1:30 PM', name:'🎮 Session 1 (Home)', note:'Ranked warm-up · قبل ما تروح البطولة'},
+  {time:'2:00 PM', name:'🥗 Lunch', note:'Fixed — always 2:00 PM'},
+  {time:'3:30 PM', name:'🚗 جاهز للخروج', note:'Head to venue'},
+  {time:'4:30 - 8:30 PM', name:'🏟 EAFC Tournament — ATTEND', note:'Watch · Analyze · Prepare 🔥'},
+  {time:'10:00 PM', name:'🍽 Dinner', note:'Fixed — always 10:00 PM'},
+  {time:'10:30 PM - 12:00 AM', name:'🎮 Light Session', note:'خفيف — process what you saw today'},
+  {time:'12:30 AM', name:'😴 Sleep', note:''},
 ];
 
 const BASE_FINALS_SPECIAL = [
-  {time:'8:00 AM',  name:'⏰ Wake Up', note:''},
-  {time:'8:30 AM',  name:'🍳 Breakfast + ☕ Coffee', note:'Fixed routine'},
-  {time:'8:50 - 9:10 AM', name:'🚶 Walk 20 min', note:''},
-  {time:'Flexible', name:'💼 Work (1.5 hrs)', note:'Flexible'},
-  {time:'9:30 - 11:00 AM', name:'🎮 Session 1 (Home)', note:'Ranked warm-up'},
-  {time:'12:00 - 1:30 PM', name:'🥗 Lunch + Rest', note:''},
+  {time:'10:00 AM', name:'⏰ Wake Up', note:''},
+  {time:'11:00 AM', name:'🍳 Breakfast', note:'Fixed'},
+  {time:'11:15 - 11:35 AM', name:'🚶 Walk 20 min', note:''},
+  {time:'11:30 AM - 1:30 PM', name:'🎮 Session 1 (Home)', note:'Ranked warm-up'},
+  {time:'2:00 PM', name:'🥗 Lunch', note:'Fixed — always 2:00 PM'},
+  {time:'3:30 PM', name:'🚗 جاهز للخروج', note:'Head to venue'},
   {time:'4:30 - 8:30 PM', name:'🏟 EAFC Tournament — ATTEND', note:'Watch · Analyze · Prepare 🔥'},
-  {time:'10:00 - 11:30 PM', name:'🎮 Light Session', note:'Light — process what you saw'},
-  {time:'12:00 AM', name:'😴 Sleep', note:''},
+  {time:'10:00 PM', name:'🍽 Dinner', note:'Fixed'},
+  {time:'10:30 PM - 12:00 AM', name:'🎮 Light Session', note:'Light — process what you saw'},
+  {time:'12:30 AM', name:'😴 Sleep', note:''},
 ];
 
 const BASE_TOURNAMENT = [
-  {time:'8:00 AM',  name:'⏰ Wake Up', note:'Natural wake-up'},
-  {time:'8:30 AM',  name:'🍳 Breakfast + ☕ First coffee', note:'Fixed daily routine'},
-  {time:'9:00 - 9:20 AM', name:'🚶 Light walk 20 min', note:'Activate, don\'t exhaust'},
-  {time:'10:00 - 11:00 AM', name:'🎮 Warmup — 3 games only', note:'Neural warmup'},
-  {time:'12:30 - 1:00 PM', name:'🥗 Light lunch', note:'Grilled chicken/kebab + salad'},
-  {time:'2:30 PM', name:'☕ Half cup — proven formula', note:'90 min before match ✅'},
-  {time:'3:00 PM', name:'🚗 Head to venue', note:'Arrive 1 hour before'},
+  {time:'11:00 AM', name:'⏰ Wake Up', note:'Natural wake-up — body fully rested'},
+  {time:'11:30 AM', name:'🍳 Breakfast', note:'Light — eggs + protein'},
+  {time:'12:30 PM', name:'☕ Half cup coffee', note:'Proven formula — 90 min before match ✅'},
+  {time:'1:00 PM', name:'🥗 Light Lunch', note:'Grilled chicken/kebab + salad — nothing heavy'},
+  {time:'1:45 PM', name:'🚗 Head to venue', note:'Arrive 1 hour before start'},
+  {time:'2:00 PM', name:'📍 Arrive at venue', note:'Mental preparation · breathing · focus'},
   {time:'4:00 PM', name:'🏆 TOURNAMENT STARTS', note:'Body ready — confidence locked 🔒'},
 ];
 
@@ -908,19 +954,17 @@ function getSchedule(dateStr){
 
   if(special && special.special_finals) return BASE_FINALS_SPECIAL;
 
-  if(phase==='finals'){
-    const sched = [...BASE_FINALS];
-    if(special && special.overrides){
-      return applyOverrides(sched, special.overrides);
-    }
+  if(phase==='finals') return BASE_FINALS;
+
+  if(phase==='intensive'){
+    const sched = [...BASE_INTENSIVE];
+    if(special && special.overrides) return applyOverrides(sched, special.overrides);
     return sched;
   }
 
   // post phase
   const sched = [...BASE_POST];
-  if(special && special.overrides){
-    return applyOverrides(sched, special.overrides);
-  }
+  if(special && special.overrides) return applyOverrides(sched, special.overrides);
   return sched;
 }
 
@@ -945,7 +989,8 @@ function applyOverrides(sched, overrides){
 
 const PHASE_LABELS={
   post:       {icon:'⚡', text:'Build Phase', cls:'phase-post'},
-  finals:     {icon:'🔥', text:'Tournament Week', cls:'phase-finals'},
+  intensive:  {icon:'🔥', text:'Intensive Phase — 20 Games/Day', cls:'phase-finals'},
+  finals:     {icon:'🏟', text:'Tournament Week', cls:'phase-finals'},
   tournament: {icon:'🏆', text:'Tournament Day', cls:'phase-tournament'},
 };
 
@@ -1051,7 +1096,7 @@ function renderSchedule(){
     noticeEl.innerHTML=`<div class="special-notice"><div class="sn-title">📌 ${special.notice.title}</div>${special.notice.items.map(i=>`<div class="sn-item">• ${i}</div>`).join('')}</div>`;
   } else { noticeEl.innerHTML=''; }
 
-  // Show/hide smart schedule controls
+  // Show/hide smart schedule controls — only for post phase
   const ctrl = document.getElementById('smartScheduleControls');
   if(ctrl) ctrl.style.display = (phase==='post' && !(special&&special.special_finals)) ? 'block' : 'none';
 
@@ -1755,7 +1800,7 @@ async function loadFromCloud(){
 
     showSyncStatus('✅ Data loaded!', 'var(--green)');
     renderDateGrid(); loadDayState(selectedDate); renderStats(); renderWeek();
-    renderMatchList(); renderMatchAnalytics();
+    renderMatchList(); renderMatchAnalytics(); renderDailyTarget();
     // Also render if matches panel is visible
     setTimeout(()=>{ renderMatchList(); renderMatchAnalytics(); }, 100);
   } catch(e){
@@ -1763,6 +1808,72 @@ async function loadFromCloud(){
   }
 }
 // ══════════════════════════════════════
+// ── DAILY TARGET ──
+const INTENSIVE_TARGETS = {
+  '2026-03-28': {games:20, wins:10},
+  '2026-03-29': {games:20, wins:12},
+  '2026-03-30': {games:20, wins:14},
+  '2026-03-31': {games:20, wins:16},
+  '2026-04-05': {games:20, wins:18},
+  '2026-04-06': {games:20, wins:19},
+  '2026-04-07': {games:20, wins:20},
+};
+
+function renderDailyTarget(){
+  const card = document.getElementById('dailyTargetCard');
+  const box  = document.getElementById('dailyTargetContent');
+  const todayKey = dateKey(today());
+  const target = INTENSIVE_TARGETS[todayKey];
+  if(!target){ card.style.display='none'; return; }
+  card.style.display='block';
+
+  const todayMatches  = matches.filter(m=>m.date===todayKey);
+  const played        = todayMatches.length;
+  const wins          = todayMatches.filter(m=>m.result==='W').length;
+  const goalsFor      = todayMatches.reduce((a,m)=>a+m.goalsFor,0);
+  const goalsAgainst  = todayMatches.reduce((a,m)=>a+m.goalsAgainst,0);
+  const goalTarget    = goalsAgainst * 2;
+
+  const pBar=(val,max,col)=>{const p=max>0?Math.min(100,Math.round(val/max*100)):0;return`<div style="background:var(--surface3);border-radius:20px;height:8px;overflow:hidden;margin-top:4px;"><div style="width:${p}%;height:100%;border-radius:20px;background:${col};transition:width .4s;"></div></div>`;};
+
+  const gC=played>=target.games?'var(--green)':played>=target.games*0.5?'var(--gold)':'var(--red)';
+  const wC=wins>=target.wins?'var(--green)':wins>=target.wins*0.5?'var(--gold)':'var(--red)';
+  const goC=goalTarget===0?'var(--muted)':goalsFor>=goalTarget?'var(--green)':goalsFor>=goalTarget*0.5?'var(--gold)':'var(--red)';
+
+  box.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">🎮 المباريات</div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:${gC}">${played}<span style="font-size:14px;color:var(--muted);"> / ${target.games}</span></div>
+        ${pBar(played,target.games,gC)}
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;">${target.games-played>0?`باقي ${target.games-played}`:'✅ اكتمل!'}</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">🏆 الفوز</div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:${wC}">${wins}<span style="font-size:14px;color:var(--muted);"> / ${target.wins}</span></div>
+        ${pBar(wins,target.wins,wC)}
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;">${target.wins-wins>0?`باقي ${target.wins-wins}`:'✅ اكتمل!'}</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">⚽ سجّل</div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:var(--green)">${goalsFor}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;">هدف مسجّل اليوم</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">🥅 دخل عليه</div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:var(--red)">${goalsAgainst}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;">هدف مستقبل</div>
+      </div>
+    </div>
+    ${goalTarget>0?`<div style="background:linear-gradient(135deg,rgba(255,193,7,.1),rgba(255,193,7,.03));border:1px solid rgba(255,193,7,.3);border-radius:10px;padding:12px 14px;">
+      <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:8px;">🎯 تارقت الأهداف — دبّل اللي دخل عليك</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:${goC}">${goalsFor}<span style="font-size:16px;color:var(--muted);"> / ${goalTarget}</span></div>
+        <div style="flex:1;">${pBar(goalsFor,goalTarget,goC)}<div style="font-size:11px;color:var(--muted);margin-top:4px;">${goalsFor>=goalTarget?'✅ تجاوزت التارقت! 🔥':`باقي ${goalTarget-goalsFor} أهداف`}</div></div>
+      </div>
+    </div>`:`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;color:var(--muted);font-size:12px;">سجّل مباريات عشان يطلع تارقت الأهداف 🎯</div>`}`;
+}
+
 let matchState = {
   mode: 'Champ', result: 'W', division: 'Elite',
   goalsFor:0, goalsAgainst:0,
@@ -1912,7 +2023,7 @@ async function saveMatch(){
   document.getElementById('m-passes-input').value='';
 
   btn.textContent='➕ Add Match'; btn.disabled=false;
-  renderMatchList(); renderMatchAnalytics();
+  renderMatchList(); renderMatchAnalytics(); renderDailyTarget();
   const t=document.getElementById('toast'); t.textContent='⚽ Match saved!'; t.classList.add('show'); setTimeout(()=>{t.classList.remove('show');t.textContent='✅ Saved!';},2200);
 }
 
@@ -2452,8 +2563,72 @@ function renderDailyStats(){
   box.innerHTML = html;
 }
 
+
+function renderChallengeSchedule(){
+  const box = document.getElementById('challengeSchedule');
+  if(!box) return;
+
+  const allDays = [
+    {date:'2026-03-28', label:'Sat 28 Mar', games:20, wins:10},
+    {date:'2026-03-29', label:'Sun 29 Mar', games:20, wins:12},
+    {date:'2026-03-30', label:'Mon 30 Mar', games:20, wins:14},
+    {date:'2026-03-31', label:'Tue 31 Mar', games:20, wins:16},
+    {date:'2026-04-05', label:'Sun 5 Apr',  games:20, wins:18},
+    {date:'2026-04-06', label:'Mon 6 Apr',  games:20, wins:19},
+    {date:'2026-04-07', label:'Tue 7 Apr',  games:20, wins:20},
+  ];
+
+  const todayKey = dateKey(today());
+
+  box.innerHTML = allDays.map(day=>{
+    const dayMatches = matches.filter(m=>m.date===day.date);
+    const played  = dayMatches.length;
+    const wins    = dayMatches.filter(m=>m.result==='W').length;
+    const gFor    = dayMatches.reduce((a,m)=>a+m.goalsFor,0);
+    const gAg     = dayMatches.reduce((a,m)=>a+m.goalsAgainst,0);
+    const goalTgt = gAg*2;
+    const isToday = day.date===todayKey;
+    const isPast  = day.date<todayKey;
+    const isFuture= day.date>todayKey;
+
+    const gamesOK = played>=day.games;
+    const winsOK  = wins>=day.wins;
+    const goalsOK = goalTgt===0?null:gFor>=goalTgt;
+    const allOK   = gamesOK && winsOK && (goalsOK!==false);
+
+    const borderC = isToday?'rgba(0,200,255,.4)':allOK&&isPast?'rgba(0,230,118,.3)':isPast&&played>0?'rgba(255,193,7,.3)':'var(--border)';
+    const bgC     = isToday?'rgba(0,200,255,.05)':allOK&&isPast?'rgba(0,230,118,.03)':'transparent';
+
+    const statusIcon = isFuture?'🔒':allOK?'✅':isPast&&played>0?'⚠️':isPast?'❌':'🎯';
+
+    return `<div style="background:${bgC};border:1px solid ${borderC};border-radius:10px;padding:12px 14px;margin-bottom:8px;${isToday?'box-shadow:0 0 0 2px rgba(0,200,255,.2);':''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${played>0?'10px':'0'};">
+        <div>
+          <span style="font-size:13px;font-weight:700;color:${isToday?'var(--accent)':'var(--text)'};">${statusIcon} ${day.label}${isToday?' — TODAY':''}</span>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px;">Target: ${day.games} games · ${day.wins} wins · score double what's conceded</div>
+        </div>
+        ${played>0?`<span style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:${wins>=day.wins?'var(--green)':'var(--gold)'};">${wins}W/${played}G</span>`:''}
+      </div>
+      ${played>0?`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+        <div style="background:var(--surface3);border-radius:8px;padding:6px 8px;text-align:center;">
+          <div style="font-size:10px;color:var(--muted);">Games</div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:${gamesOK?'var(--green)':'var(--gold)'};">${played}/${day.games}</div>
+        </div>
+        <div style="background:var(--surface3);border-radius:8px;padding:6px 8px;text-align:center;">
+          <div style="font-size:10px;color:var(--muted);">Wins</div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:${winsOK?'var(--green)':'var(--gold)'};">${wins}/${day.wins}</div>
+        </div>
+        <div style="background:var(--surface3);border-radius:8px;padding:6px 8px;text-align:center;">
+          <div style="font-size:10px;color:var(--muted);">Goals</div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:${goalTgt===0?'var(--muted)':gFor>=goalTgt?'var(--green)':'var(--gold)'};">${gFor}${goalTgt>0?'/'+goalTgt:''}</div>
+        </div>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
 function switchTab(name){
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['daily','matches','whoop','stats','week','coachtasks','coach'][i]===name));
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['daily','matches','whoop','stats','week','challenges','coachtasks','coach'][i]===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+name).classList.add('active');
   if(name==='stats'){
@@ -2462,8 +2637,9 @@ function switchTab(name){
   }
   if(name==='week')       renderWeek();
   if(name==='whoop')      loadWhoopForDate(selectedDate);
-  if(name==='matches'){   initMatchForm(); renderMatchList(); renderMatchAnalytics(); }
+  if(name==='matches'){   initMatchForm(); renderMatchList(); renderMatchAnalytics(); renderDailyTarget(); }
   if(name==='coachtasks') loadPlayerTasks();
+  if(name==='challenges'){ renderDailyTarget(); renderChallengeSchedule(); }
 }
 
 function init(){
