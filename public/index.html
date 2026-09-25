@@ -2704,7 +2704,7 @@ function renderHomeMyGoals(){
 // ══════════════════════════════════════
 // PLAY-SESSION TIMER
 // ══════════════════════════════════════
-const SESSION_TYPES=[{id:'ranked',label:'رانكد / FUT',icon:'🏆'},{id:'rivals',label:'Rivals',icon:'⚔️'},{id:'training',label:'تدريب',icon:'🎯'},{id:'scrim',label:'سكريم',icon:'🤝'},{id:'official',label:'بطولة',icon:'🏟'}];
+const SESSION_TYPES=[{id:'fcpro',label:'FC Pro Ladder',icon:'🪜'},{id:'ranked',label:'FUT Champions',icon:'🏆'},{id:'rivals',label:'Rivals',icon:'⚔️'},{id:'training',label:'تدريب',icon:'🎯'},{id:'scrim',label:'سكريم',icon:'🤝'},{id:'official',label:'بطولة',icon:'🏟'}];
 const stypeOf=id=>SESSION_TYPES.find(t=>t.id===id)||SESSION_TYPES[0];
 let timerType='ranked';
 function hms(ms){ ms=Math.max(0,ms); const s=Math.floor(ms/1000); return `${pad2(Math.floor(s/3600))}:${pad2(Math.floor(s%3600/60))}:${pad2(s%60)}`; }
@@ -2781,7 +2781,9 @@ function tickTimer(){
   const c=document.getElementById('timerClock'); if(c) c.textContent=t;
   const g=document.getElementById('timerGames');
   if(g){ const ms=matchesInRange(new Date(a.start),new Date()), w=ms.filter(m=>resultOf(m)==='W').length; const h=activeElapsed()/36e5;
-    g.innerHTML= ms.length? `هالجلسة: <b class="num">${ms.length}</b> مباراة · <b class="num">${w}</b> فوز${h>=0.5?` · <span class="num">${(ms.length/h).toFixed(1)}</span> مباراة/ساعة`:''}` : 'سجّلي المباريات وهي شغّالة وتنحسب على الجلسة'; }
+    const fp=ms.filter(m=>m.fcp&&m.fcp.delta!=null), fpd=sum(fp.map(m=>m.fcp.delta));
+    const fpTxt = a.type==='fcpro' ? (()=>{ const F=fpState(fpAutoLadder()); return `<br>🪜 النقاط: <b class="num">${F.rating??'—'}</b>${fp.length?` (هالجلسة <b class="num" style="color:${fpd>=0?'var(--green)':'#ff5c7a'}">${fpd>0?'+':''}${fpd}</b>)`:''}${F.cutoff&&F.rating!=null?` · باقي <b class="num">${Math.max(0,F.cutoff-F.rating)}</b> للحد`:''}`; })() : '';
+    g.innerHTML= (ms.length? `هالجلسة: <b class="num">${ms.length}</b> مباراة · <b class="num">${w}</b> فوز${h>=0.5?` · <span class="num">${(ms.length/h).toFixed(1)}</span> مباراة/ساعة`:''}` : 'سجّلي المباريات وهي شغّالة وتنحسب على الجلسة')+fpTxt; }
 }
 
 // Win-rate by hour inside a session (fatigue curve)
