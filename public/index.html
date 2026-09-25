@@ -1314,6 +1314,7 @@ async function _readFc(img, {langs, onProgress}){
   const {data}=await worker.recognize(lay.canvas, {}, {blocks:true});
   const words=[]; (data.blocks||[]).forEach(b=>(b.paragraphs||[]).forEach(p=>(p.lines||[]).forEach(l=>(l.words||[]).forEach(w=>words.push(w)))));
   const rows=groupRows(words);
+  if(/skill\s*rating/i.test(data.text||'')){ const r=await _readLadderScreen(img, worker, rows, lay, data.text||''); URL.revokeObjectURL(img.src); return r; }
   const tab=_detectTab(data.text||'');
   const allowed = tab ? new Set(FC_TAB_KEYS[tab]) : new Set(FC_TAB_KEYS.summary.concat(['shotsOnTarget']));
   const out={left:{}, right:{}, found:[], score:null, teams:null, tab, rawText:data.text};
@@ -1373,6 +1374,58 @@ async function readMatchFactsImage(file, opts={}){
   if(Math.abs(ratio-16/9)<0.06) return _readFc(img, opts);   // console screenshot
   URL.revokeObjectURL(img.src);
   return _readGeneric(file, opts);                          // phone photo / other layout
+}
+
+
+// ══════════════════════════════════════
+// FC PRO LADDER RESULT SCREEN — "MATCH WIN / LOSS", "Your Skill Rating 748 -13"
+// The result word and the +/- are coloured, so these crops are read on the brightest channel (colour kept).
+// ══════════════════════════════════════
+async function _ocrRaw(worker, img, fx0,fy0,fx1,fy1, psm){
+  const W=img.width,H=img.height, x0=Math.max(0,fx0*W), y0=Math.max(0,fy0*H), w=Math.min(W,fx1*W)-x0, h=Math.min(H,fy1*H)-y0;
+  if(w<6||h<6) return '';
+  const S=Math.max(1, Math.min(3, 90/h*2)), pad=Math.round(h*0.3*S);
+  const c=document.createElement('canvas'); c.width=Math.round(w*S)+pad*2; c.height=Math.round(h*S)+pad*2;
+  const x=c.getContext('2d',{willReadFrequently:true}); x.fillStyle='#000'; x.fillRect(0,0,c.width,c.height); x.imageSmoothingQuality='high';
+  x.drawImage(img,x0,y0,w,h,pad,pad,Math.round(w*S),Math.round(h*S));
+  const d=x.getImageData(0,0,c.width,c.height), p=d.data;
+  for(let i=0;i<p.length;i+=4){ const v=Math.max(p[i],p[i+1],p[i+2]); const o=v>150?0:255; p[i]=p[i+1]=p[i+2]=o; }
+  x.putImageData(d,0,0);
+  await worker.setParameters({tessedit_pageseg_mode:psm});
+  const {data}=await worker.recognize(c);
+  return (data.text||'').trim();
+}
+async function _readLadderScreen(img, worker, rows, lay, text){
+  const out={kind:'ladder', left:{}, right:{}, found:[], score:null, teams:null, ladder:{}};
+  const lowerAll=text.toLowerCase();
+  // which ladder
+  const nm=text.match(/FC\s*Pro[^\n]*?(Open\s*(Ladder|Cup\s*\d))/i);
+  out.ladder.name = nm ? nm[0].replace(/\s+/g,' ').trim() : (/ladder/i.test(text)?'FC Pro Open Ladder':'');
+  // positions from the layout pass (white text survives there)
+  const find=re=>rows.find(r=>re.test(r.words.map(w=>w.text).join(' ')));
+  const srRow=find(/skill\s*rating/i);
+  const yS = srRow ? srRow.cy/lay.height : 0.485;                 // "Your Skill Rating" caption
+  const nameRow=find(/open\s*(ladder|cup)/i); const yN = nameRow ? nameRow.cy/lay.height : 0.333;
+  // big rating number: the largest numeric word under the caption
+  let ratingWord=null;
+  rows.filter(r=>r.cy/lay.height>yS && r.cy/lay.height<yS+0.15).forEach(r=>r.words.forEach(w=>{ const n=parseNumToken(w.text); if(n!=null && n>=100 && n<5000 && (!ratingWord || (w.y1-w.y0)>(ratingWord.y1-ratingWord.y0))) ratingWord={x0:w.x0,x1:w.x1,y0:w.y0,y1:w.y1,v:n}; }));
+  let rating = ratingWord? ratingWord.v : null;
+  if(rating==null){ const n=_nums(await _ocrRaw(worker,img,0.41,yS+0.02,0.585,yS+0.14,'7')); rating=n.find(v=>v>=100)??null; }
+  // result word between the ladder name and the caption
+  const res=(await _ocrRaw(worker,img,0.30,yN+0.02,0.70,yS-0.02,'7')).toUpperCase();
+  out.ladder.result = /LOS/.test(res)?'L' : /WIN|VICTOR/.test(res)?'W' : /DRAW|TIE/.test(res)?'D' : null;
+  // +/- next to the rating
+  const rx = ratingWord? ratingWord.x1/lay.width : 0.57;
+  const ry0 = ratingWord? ratingWord.y0/lay.height : yS+0.03, ry1 = ratingWord? ratingWord.y1/lay.height : yS+0.13;
+  let dt=await _ocrRaw(worker,img,rx+0.004,ry0,rx+0.095,ry0+(ry1-ry0)*0.85,'7');
+  if(!/\d/.test(dt)) dt=await _ocrRaw(worker,img,rx+0.004,ry0,rx+0.095,ry0+(ry1-ry0)*0.85,'8');
+  const m=dt.replace(/[—–−~]/g,'-').replace(/\s+/g,'').match(/([+\-])?(\d{1,2})(?!\d)/);
+  let delta=null;
+  if(m){ delta=+m[2]; if(m[1]==='-' || (!m[1] && out.ladder.result==='L')) delta=-delta; }
+  out.ladder.rating=rating; out.ladder.delta=delta;
+  if(!out.ladder.result && delta!=null) out.ladder.result = delta>0?'W':delta<0?'L':'D';
+  await worker.setParameters({ tessedit_pageseg_mode:'11' });
+  return out;
 }
 
 </script>
@@ -1997,7 +2050,7 @@ async function handleShots(fileList){
 
   // keep what earlier screenshots of this match already read — each new image only fills the gaps
   const prev=form.ocr;
-  const merged={left:{...(prev?.left||{})},right:{...(prev?.right||{})},score:prev?.score||null,teams:prev?.teams||null,tabs:[...(prev?.tabs||[])]};
+  const merged={left:{...(prev?.left||{})},right:{...(prev?.right||{})},score:prev?.score||null,teams:prev?.teams||null,tabs:[...(prev?.tabs||[])],ladder:prev?.ladder||null};
   const steps={'loading tesseract core':'تحميل محرك القراءة…','initializing tesseract':'تجهيز…','loading language traineddata':'تحميل اللغة…','initializing api':'تجهيز…','recognizing text':'قراءة الصورة…','reading values':'قراءة الأرقام…'};
   try{
     for(let i=0;i<files.length;i++){
@@ -2008,6 +2061,7 @@ async function handleShots(fileList){
       if(!merged.score && res.score) merged.score=res.score;
       if(!merged.teams && res.teams) merged.teams=res.teams;
       if(res.tab){ merged.tabs=merged.tabs||[]; if(!merged.tabs.includes(res.tab)) merged.tabs.push(res.tab); }
+      if(res.kind==='ladder' && res.ladder) merged.ladder=res.ladder;
     }
   }catch(e){
     ocrMsg(`⚠️ ${esc(e.message||'صار خطأ بالقراءة')} — تقدرين تعبّين الأرقام يدويًا`,0); console.error(e); return;
@@ -2043,13 +2097,34 @@ function applyOcr(){
   const oppName = r.teams ? (r.teams[op]||'') : '';
   if(oppName && !document.getElementById('f-opp').value) document.getElementById('f-opp').value=oppName;
   if(!showAdv && STAT_KEYS.some(k=>!STAT_UI[k].core && (r.left[k]!=null||r.right[k]!=null))) toggleAdv();
+  const ladTxt = r.ladder ? applyLadderShot(r) : '';
+  if(!filled && ladTxt){ ocrMsg(ladTxt+'<br><span class="muted">ارفعي كمان صورة الإحصائيات (الملخص) عشان تنعبّى الأرقام والسكور.</span>',1); return; }
   if(!filled){ ocrMsg('⚠️ ما قدرت أقرأ أرقام من الصورة. تأكدي إنها شاشة الإحصائيات وواضحة — أو عبّيها يدويًا.',0); return; }
   const TAB_AR={summary:'الملخص',shooting:'التسديد',passing:'التمرير',defending:'الدفاع',possession:'الاستحواذ'};
   const tabsTxt=(r.tabs||[]).length?` من تبويب ${r.tabs.map(t=>TAB_AR[t]||t).join('، ')}`:'';
   const myName=r.teams?.[me]||'';
   const sideTxt = form.sideAuto ? `<br>⚽ <b>${esc(myName)}</b> على ${me==='left'?'اليسار':'اليمين'} — عرفتها من اسم الفريق`
     : r.teams ? `<br>⚠️ ما قدرت أتأكد أي جهة لفريقكم — تأكدي من الاختيار تحت (${esc(r.teams.left||'؟')} يسار · ${esc(r.teams.right||'؟')} يمين)` : '';
-  ocrMsg(`✅ قريت <b class="num">${filled}</b> رقم${tabsTxt}${r.score?` + السكور <b class="num">${r.score[me]}–${r.score[op]}</b>`:''}. الخانات <span style="color:var(--green)">الخضراء</span> من الصورة${missing.length?`، و<span style="color:var(--gold)">الصفراء</span> ما انقرت (${[...new Set(missing)].slice(0,4).join('، ')})`:''} — راجعيها قبل الحفظ.${sideTxt}`,1);
+  ocrMsg(`✅ قريت <b class="num">${filled}</b> رقم${tabsTxt}${r.score?` + السكور <b class="num">${r.score[me]}–${r.score[op]}</b>`:''}. الخانات <span style="color:var(--green)">الخضراء</span> من الصورة${missing.length?`، و<span style="color:var(--gold)">الصفراء</span> ما انقرت (${[...new Set(missing)].slice(0,4).join('، ')})`:''} — راجعيها قبل الحفظ.${sideTxt}${ladTxt?'<br>'+ladTxt:''}`,1);
+}
+// FC Pro ladder result screen → mode, ladder, rating, change, result
+function applyLadderShot(r){
+  const L=r.ladder; if(L.rating==null && L.delta==null) return '';
+  setMode('ladder');
+  const nm=(L.name||'').toLowerCase(); const cup=nm.match(/cup\s*(\d)/);
+  const id = cup ? (fpLadders().find(l=>new RegExp('cup\\s*'+cup[1],'i').test(l.name))||{}).id : /open\s*ladder/.test(nm) ? (fpLadders().find(l=>/open\s*ladder/i.test(l.name))||{}).id : null;
+  if(id) document.getElementById('f-fpl').value=id;
+  if(L.rating!=null){ const el=document.getElementById('f-rating'); el.value=L.rating; el.classList.add('ocr'); }
+  if(L.delta!=null){ const el=document.getElementById('f-delta'); el.value=L.delta; el.classList.add('ocr'); }
+  if(L.result){
+    // the ladder screen is the final word: a level score with a win/loss means it went to penalties
+    const gf=+document.getElementById('f-gf').value||0, ga=+document.getElementById('f-ga').value||0;
+    if(r.score && gf===ga && L.result!=='D') setDecided('PEN');
+    form.resultManual=true; setResultBtn(L.result);
+  }
+  updateFpHint();
+  const rt={W:'فوز',L:'خسارة',D:'تعادل'}[L.result]||'';
+  return `🪜 <b>${esc(L.name||'FC Pro')}</b>: النقاط <b class="num">${L.rating??'—'}</b>${L.delta!=null?` (<b class="num" style="color:${L.delta>=0?'var(--green)':'#ff5c7a'}">${L.delta>0?'+':''}${L.delta}</b>)`:''}${rt?` · ${rt}`:''}`;
 }
 
 // ══════════════════════════════════════
