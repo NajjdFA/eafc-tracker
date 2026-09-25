@@ -1189,7 +1189,7 @@ async function _readCell(worker, canvas, rect){
   return toks;
 }
 
-async function readMatchFactsImage(file, {langs='eng', onProgress}={}){
+async function _readGeneric(file, {langs='eng', onProgress}={}){
   const pre=await preprocessImage(file);
   const worker=await getOcrWorker(langs, onProgress);
   await worker.setParameters({ tessedit_pageseg_mode:'11', tessedit_char_whitelist:'' });
@@ -1234,6 +1234,147 @@ async function readMatchFactsImage(file, {langs='eng', onProgress}={}){
   return parsed;
 }
 
+
+// ══════════════════════════════════════
+// FC 27 MATCH FACTS — layout-aware reader (16:9 console screenshots)
+// Centre table: [left value | label | right value]; gauges (PASS ACCURACY…) left/right; score in the header.
+// ══════════════════════════════════════
+const FC_TAB_KEYS = {
+  summary:   ['possession','recoveryTime','shots','xg','passes','tackles','tacklesWon','interceptions','saves','fouls','offsides','corners','freeKicks','penalties','yellow','red'],
+  shooting:  ['shots','shotsOnTarget'],
+  passing:   ['passes'],
+  defending: ['interceptions','saves','fouls','yellow','red'],
+  possession:[],
+};
+const FC_GAUGES = [
+  {key:'passAcc',        re:/pass\s*accuracy/i},
+  {key:'shotAcc',        re:/shot\s*accuracy/i},
+  {key:'dribbleSuccess', re:/dribble\s*success/i},
+];
+const FC_COLS = {left:[0.333,0.381], right:[0.617,0.658], label:[0.395,0.605]};  // right edge stops before the scrollbar
+
+// dark → white background, white text → black, and drop everything coloured (bars, rings, pitch maps, logos)
+function _prepCanvas(img, maxW, allowUp){
+  const s=allowUp? maxW/img.width : Math.min(1, maxW/img.width), W=Math.round(img.width*s), H=Math.round(img.height*s);
+  const c=document.createElement('canvas'); c.width=W; c.height=H;
+  const x=c.getContext('2d',{willReadFrequently:true}); x.imageSmoothingQuality='high'; x.drawImage(img,0,0,W,H);
+  const d=x.getImageData(0,0,W,H), p=d.data;
+  for(let i=0;i<p.length;i+=4){
+    const r=p[i],g=p[i+1],b=p[i+2], mx=Math.max(r,g,b), mn=Math.min(r,g,b);
+    let v = (mx-mn>70) ? 0 : (0.299*r+0.587*g+0.114*b);   // coloured pixel → background
+    v = v<120 ? 255 : Math.max(0, 255-(v-120)*2.2);          // light text → dark on white
+    p[i]=p[i+1]=p[i+2]=v;
+  }
+  x.putImageData(d,0,0);
+  return {canvas:c,width:W,height:H};
+}
+function _loadImg(file){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error('تعذّر فتح الصورة')); i.src=URL.createObjectURL(file); }); }
+
+async function _ocrRect(worker, src, x0,y0,x1,y1, psm){
+  const W=src.width,H=src.height;
+  const r={x:Math.max(0,Math.round(x0)), y:Math.max(0,Math.round(y0))}; r.w=Math.min(W-r.x,Math.round(x1-x0)); r.h=Math.min(H-r.y,Math.round(y1-y0));
+  if(r.w<6||r.h<6) return '';
+  const S = r.h<60 ? 2 : 1, pad=Math.round(r.h*0.35);
+  const c=document.createElement('canvas'); c.width=(r.w+pad*2)*S; c.height=(r.h+pad*2)*S;
+  const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.imageSmoothingQuality='high';
+  x.drawImage(src,r.x,r.y,r.w,r.h,pad*S,pad*S,r.w*S,r.h*S);
+  await worker.setParameters({tessedit_pageseg_mode:psm});
+  const {data}=await worker.recognize(c);
+  return (data.text||'').trim();
+}
+function _nums(text){ return String(text).split(/\s+/).map(parseNumToken).filter(v=>v!==null); }
+async function _ocrNum(worker, src, x0,y0,x1,y1, pick){
+  let t=await _ocrRect(worker,src,x0,y0,x1,y1,'7'); let n=_nums(t);
+  if(!n.length){ t=await _ocrRect(worker,src,x0,y0,x1,y1,'8'); n=_nums(t); }
+  if(!n.length){ t=await _ocrRect(worker,src,x0,y0,x1,y1,'10'); n=_nums(t); }
+  if(!n.length) return null;
+  return pick==='last'? n[n.length-1] : n[0];
+}
+function _detectTab(text){
+  const t=text.toLowerCase();
+  if(/overall\s*passing/.test(t)) return 'passing';
+  if(/overall\s*shooting/.test(t)) return 'shooting';
+  if(/overall\s*defending/.test(t)) return 'defending';
+  if(/overall\s*possession/.test(t)) return 'possession';
+  if(/recovery\s*time|expected\s*goals|possession\s*%/.test(t)) return 'summary';
+  return null;
+}
+function _fixFc(def, v){
+  if(v==null) return null;
+  if(def.key==='xg' && Number.isInteger(v) && v>=10) v = v>=100? v/100 : v/10; // decimal point lost
+  return _fixValue(def, v);
+}
+
+async function _readFc(img, {langs, onProgress}){
+  const full=_prepCanvas(img, Math.max(2560, Math.min(3840,img.width)), true);  // cells are cut from this (small screenshots get upscaled)
+  const lay=_prepCanvas(img, 1920, true);             // layout pass at a fixed 1920 width
+  const k=full.width/lay.width, W=full.width, H=full.height;
+  const worker=await getOcrWorker(langs, onProgress);
+  await worker.setParameters({ tessedit_pageseg_mode:'11', tessedit_char_whitelist:'' });
+  const {data}=await worker.recognize(lay.canvas, {}, {blocks:true});
+  const words=[]; (data.blocks||[]).forEach(b=>(b.paragraphs||[]).forEach(p=>(p.lines||[]).forEach(l=>(l.words||[]).forEach(w=>words.push(w)))));
+  const rows=groupRows(words);
+  const tab=_detectTab(data.text||'');
+  const allowed = tab ? new Set(FC_TAB_KEYS[tab]) : new Set(FC_TAB_KEYS.summary.concat(['shotsOnTarget']));
+  const out={left:{}, right:{}, found:[], score:null, teams:null, tab, rawText:data.text};
+
+  // table rows: label words inside the centre column
+  const labelRows=[];
+  for(const r of rows){
+    const lw=r.words.filter(w=>{ const cx=(w.x0+w.x1)/2/lay.width; return cx>FC_COLS.label[0] && cx<FC_COLS.label[1] && /[a-z]/i.test(w.text) && parseNumToken(w.text)===null; });
+    if(!lw.length || r.cy<lay.height*0.2) continue;
+    const txt=lw.map(w=>w.text).join(' ');
+    const m=matchStatLabel(txt); if(!m || !allowed.has(m.key)) continue;
+    if(labelRows.some(x=>x.key===m.key)) continue;
+    labelRows.push({key:m.key, cy:r.cy*k, h:Math.max(...lw.map(w=>w.y1-w.y0))*k});
+  }
+  const total=labelRows.length+FC_GAUGES.length*2+2; let done=0;
+  const tick=()=>{ if(onProgress) onProgress('reading values', (++done)/total); };
+  for(const r of labelRows){
+    const def=STAT_DEFS.find(d=>d.key===r.key), y0=r.cy-r.h*0.95, y1=r.cy+r.h*0.95;
+    const lv=_fixFc(def, await _ocrNum(worker, full.canvas, FC_COLS.left[0]*W, y0, FC_COLS.left[1]*W, y1, 'first'));
+    const rv=_fixFc(def, await _ocrNum(worker, full.canvas, FC_COLS.right[0]*W, y0, FC_COLS.right[1]*W, y1, 'last'));
+    tick();
+    if(lv!=null) out.left[r.key]=lv; if(rv!=null) out.right[r.key]=rv;
+    if(lv!=null||rv!=null) out.found.push(r.key);
+  }
+  // gauges: the % sits in a ring right above its caption
+  for(const g of FC_GAUGES){
+    for(const r of rows) for(const side of ['left','right']){
+      // captions sit outside the table; a visual row can also hold a table label, so look at each side separately
+      const lw=r.words.filter(w=>{ const cx=(w.x0+w.x1)/2/lay.width; return (side==='left'?cx<0.3:cx>0.7) && /[a-z]/i.test(w.text); });
+      if(!lw.length || !g.re.test(lw.map(w=>w.text).join(' ')) || out[side][g.key]!=null) continue;
+      const cx=(Math.min(...lw.map(w=>w.x0))+Math.max(...lw.map(w=>w.x1)))/2/lay.width;
+      const cy=((Math.min(...lw.map(w=>w.y0))+Math.max(...lw.map(w=>w.y1)))/2)*k;
+      const v=await _ocrNum(worker, full.canvas, (cx-0.055)*W, cy-0.135*H, (cx+0.055)*W, cy-0.045*H, 'first');
+      if(v!=null && v<=100){ out[side][g.key]=Math.round(v); if(!out.found.includes(g.key)) out.found.push(g.key); }
+    }
+    tick();
+  }
+  // header: score digits + team names
+  const hy0=0.035*H, hy1=0.105*H;
+  const sl=await _ocrNum(worker, full.canvas, 0.455*W, hy0, 0.49*W, hy1, 'first'); tick();
+  const sr=await _ocrNum(worker, full.canvas, 0.51*W, hy0, 0.545*W, hy1, 'first'); tick();
+  if(sl!=null && sr!=null && sl<=30 && sr<=30 && Number.isInteger(sl) && Number.isInteger(sr)) out.score={left:sl,right:sr};
+  const clean=t=>t.replace(/[^\p{L}\p{N} _.\-]/gu,' ').replace(/\s+/g,' ').trim();
+  const tl=clean(await _ocrRect(worker, full.canvas, 0.30*W, hy0+0.005*H, 0.405*W, hy1-0.005*H, '7'));
+  const tr=clean(await _ocrRect(worker, full.canvas, 0.595*W, hy0+0.005*H, 0.70*W, hy1-0.005*H, '7'));
+  if(tl||tr) out.teams={left:tl, right:tr};
+  await worker.setParameters({ tessedit_pageseg_mode:'11' });
+  URL.revokeObjectURL(img.src);
+  _sanity(out);
+  return out;
+}
+
+async function readMatchFactsImage(file, opts={}){
+  opts.langs=opts.langs||'eng';
+  const img=await _loadImg(file);
+  const ratio=img.width/img.height;
+  if(Math.abs(ratio-16/9)<0.06) return _readFc(img, opts);   // console screenshot
+  URL.revokeObjectURL(img.src);
+  return _readGeneric(file, opts);                          // phone photo / other layout
+}
+
 </script>
 <script>
 // ══════════════════════════════════════
@@ -1242,7 +1383,7 @@ async function readMatchFactsImage(file, {langs='eng', onProgress}={}){
 const APP = {
   season: '2026-27',
   // لإضافة لاعب جديد: أضيفي سطر هنا بنفس الشكل
-  players: [ {id:'najd', name:'نجد'} ],
+  players: [ {id:'najd', name:'نجد', team:'NAJD FC'} ],   // team = club name as it appears in-game
   defaultPlayer: 'najd',
 };
 const SUPA_URL = 'https://nupmasrrsbtcxvsvltbt.supabase.co';
@@ -1310,7 +1451,7 @@ function lsJSON(k,def){ try{ const v=JSON.parse(lsGet(k)); return v==null?def:v;
 
 const DEFAULT_SETTINGS = () => ({
   name: (APP.players.find(p=>p.id===PLAYER)||{}).name || PLAYER,
-  team:'', lang:'eng', side:'left',
+  team:(APP.players.find(p=>p.id===PLAYER)||{}).team||'', lang:'eng', side:'left',
   dayGames:10, dayWins:6, weekGames:50,
   seasonStart: '',
   fut: {games:15, wins:11, startDow:5, startTime:'22:00', endDow:2, endTime:'10:00'},
@@ -1835,13 +1976,15 @@ function openImg(u){ document.getElementById('lbImg').src=u; document.getElement
 // ══════════════════════════════════════
 function ocrMsg(html, p){ const s=document.getElementById('ocrStatus'); s.classList.add('show'); document.getElementById('ocrMsg').innerHTML=html; if(p!=null) document.getElementById('ocrBar').style.width=Math.round(p*100)+'%'; }
 
+// Which side of the screenshot is our club? Decided by the club name in the header (home/away changes every match).
+const _squash=s=>_normLabel(s||'').replace(/\s+/g,'');
+function teamScore(team, name){ const t=_squash(team), n=_squash(name); if(!t||!n) return 0; if(n.includes(t)||t.includes(n)) return 1; return _sim(t,n); }
 function detectSide(res){
-  const team=_normLabel(settings.team||'');
+  const team=settings.team||(APP.players.find(p=>p.id===PLAYER)||{}).team||'';
+  form.sideAuto=false;
   if(team && res.teams){
-    const l=_normLabel(res.teams.left||''), r=_normLabel(res.teams.right||'');
-    const sl=l?Math.max(_sim(team,l), l.includes(team)||team.includes(l)?1:0):0;
-    const sr=r?Math.max(_sim(team,r), r.includes(team)||team.includes(r)?1:0):0;
-    if(Math.max(sl,sr)>=0.6 && sl!==sr) return sl>sr?'left':'right';
+    const sl=teamScore(team,res.teams.left), sr=teamScore(team,res.teams.right);
+    if(Math.max(sl,sr)>=0.6 && Math.abs(sl-sr)>=0.15){ form.sideAuto=true; return sl>sr?'left':'right'; }
   }
   return settings.side||'left';
 }
@@ -1854,7 +1997,7 @@ async function handleShots(fileList){
 
   // keep what earlier screenshots of this match already read — each new image only fills the gaps
   const prev=form.ocr;
-  const merged={left:{...(prev?.left||{})},right:{...(prev?.right||{})},score:prev?.score||null,teams:prev?.teams||null};
+  const merged={left:{...(prev?.left||{})},right:{...(prev?.right||{})},score:prev?.score||null,teams:prev?.teams||null,tabs:[...(prev?.tabs||[])]};
   const steps={'loading tesseract core':'تحميل محرك القراءة…','initializing tesseract':'تجهيز…','loading language traineddata':'تحميل اللغة…','initializing api':'تجهيز…','recognizing text':'قراءة الصورة…','reading values':'قراءة الأرقام…'};
   try{
     for(let i=0;i<files.length;i++){
@@ -1864,6 +2007,7 @@ async function handleShots(fileList){
       for(const side of ['left','right']) for(const [k,v] of Object.entries(res[side])) if(v!=null && merged[side][k]==null) merged[side][k]=v;
       if(!merged.score && res.score) merged.score=res.score;
       if(!merged.teams && res.teams) merged.teams=res.teams;
+      if(res.tab){ merged.tabs=merged.tabs||[]; if(!merged.tabs.includes(res.tab)) merged.tabs.push(res.tab); }
     }
   }catch(e){
     ocrMsg(`⚠️ ${esc(e.message||'صار خطأ بالقراءة')} — تقدرين تعبّين الأرقام يدويًا`,0); console.error(e); return;
@@ -1873,7 +2017,13 @@ async function handleShots(fileList){
   applyOcr();
   document.getElementById('sideRow').style.display='flex';
 }
-function setOcrSide(s){ form.side=s; applyOcr(); }
+function setOcrSide(s){
+  form.side=s; form.sideAuto=false;
+  // she corrected it by hand → remember that club name so next time it is automatic
+  const name=form.ocr?.teams?.[s];
+  if(name && name.length>=2 && teamScore(settings.team,name)<0.6){ settings.team=name; persistLocal(); cloudSaveSettings(); toast(`👍 حفظت اسم الفريق "${name}" — المرات الجاية تنعرف الجهة تلقائيًا`,3500); }
+  applyOcr();
+}
 function applyOcr(){
   const r=form.ocr; if(!r) return;
   const me=form.side==='left'?'left':'right', op=me==='left'?'right':'left';
@@ -1894,7 +2044,12 @@ function applyOcr(){
   if(oppName && !document.getElementById('f-opp').value) document.getElementById('f-opp').value=oppName;
   if(!showAdv && STAT_KEYS.some(k=>!STAT_UI[k].core && (r.left[k]!=null||r.right[k]!=null))) toggleAdv();
   if(!filled){ ocrMsg('⚠️ ما قدرت أقرأ أرقام من الصورة. تأكدي إنها شاشة الإحصائيات وواضحة — أو عبّيها يدويًا.',0); return; }
-  ocrMsg(`✅ قريت <b class="num">${filled}</b> رقم${r.score?` + السكور <b class="num">${r.score[me]}–${r.score[op]}</b>`:''}. الخانات <span style="color:var(--green)">الخضراء</span> من الصورة${missing.length?`، و<span style="color:var(--gold)">الصفراء</span> ما انقرت (${[...new Set(missing)].slice(0,4).join('، ')})`:''} — راجعيها قبل الحفظ.`,1);
+  const TAB_AR={summary:'الملخص',shooting:'التسديد',passing:'التمرير',defending:'الدفاع',possession:'الاستحواذ'};
+  const tabsTxt=(r.tabs||[]).length?` من تبويب ${r.tabs.map(t=>TAB_AR[t]||t).join('، ')}`:'';
+  const myName=r.teams?.[me]||'';
+  const sideTxt = form.sideAuto ? `<br>⚽ <b>${esc(myName)}</b> على ${me==='left'?'اليسار':'اليمين'} — عرفتها من اسم الفريق`
+    : r.teams ? `<br>⚠️ ما قدرت أتأكد أي جهة لفريقكم — تأكدي من الاختيار تحت (${esc(r.teams.left||'؟')} يسار · ${esc(r.teams.right||'؟')} يمين)` : '';
+  ocrMsg(`✅ قريت <b class="num">${filled}</b> رقم${tabsTxt}${r.score?` + السكور <b class="num">${r.score[me]}–${r.score[op]}</b>`:''}. الخانات <span style="color:var(--green)">الخضراء</span> من الصورة${missing.length?`، و<span style="color:var(--gold)">الصفراء</span> ما انقرت (${[...new Set(missing)].slice(0,4).join('، ')})`:''} — راجعيها قبل الحفظ.${sideTxt}`,1);
 }
 
 // ══════════════════════════════════════
