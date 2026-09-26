@@ -331,6 +331,14 @@ textarea.inp{resize:vertical;min-height:60px;}
 .dows button{background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;color:var(--text2);cursor:pointer;font-family:inherit;}
 .dows button.active{border-color:#9146ff;background:rgba(145,70,255,.15);color:#c9a7ff;}
 
+/* EXTENDED STATS */
+.ext-tab{font-size:11px;font-weight:700;color:var(--accent);margin:10px 0 4px;}
+.ext-row{display:grid;grid-template-columns:64px 1fr 64px;gap:6px;align-items:center;margin-bottom:4px;}
+.ext-row .lbl{font-size:11px;text-align:center;color:var(--text2);background:var(--surface2);border-radius:7px;padding:4px 4px;line-height:1.2;}
+.ext-row .lbl span{display:block;font-size:9px;color:var(--muted);direction:ltr;}
+.ext-row input{width:100%;text-align:center;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;background:var(--surface2);border:1px solid rgba(0,230,118,.45);border-radius:7px;color:var(--text);padding:3px 2px;direction:ltr;}
+.ext-g{font-size:10px;color:var(--gold);text-align:center;}
+
 /* EVENTS */
 .ev-item{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin-bottom:6px;font-size:12px;}
 .ev-item.past{opacity:.5;}
@@ -510,6 +518,10 @@ textarea.inp{resize:vertical;min-height:60px;}
       <div class="scroll-x">
         <table class="stbl" id="statTable"></table>
       </div>
+      <details id="extBox" style="display:none;margin-top:10px">
+        <summary class="small" style="cursor:pointer;font-weight:700;color:var(--accent)" id="extSummary">📋 إحصائيات مفصّلة</summary>
+        <div id="extRows"></div>
+      </details>
 
       <div class="fgrid" style="margin-top:12px;">
         <div><label class="f">تشكيلة نجد</label><input type="text" class="inp ltr" id="f-form" placeholder="4-2-3-1"></div>
@@ -794,6 +806,13 @@ textarea.inp{resize:vertical;min-height:60px;}
     </div>
 
     <div class="card">
+      <div class="card-title">📋 الإحصائيات المفصّلة (متوسط المباراة)</div>
+      <div class="seg" id="extTabSeg" style="margin-bottom:10px"></div>
+      <div id="extInsights"></div>
+      <div class="scroll-x" id="extTable"></div>
+    </div>
+
+    <div class="card">
       <div class="card-title">🔋 التعب — الأداء حسب ساعة الجلسة</div>
       <div id="fatigueBox"></div>
     </div>
@@ -811,6 +830,40 @@ textarea.inp{resize:vertical;min-height:60px;}
 
   <!-- ═════════ SETTINGS ═════════ -->
   <div class="panel" id="panel-coach">
+    <div class="card" id="aiCard" style="border-color:rgba(179,136,255,.4)">
+      <div class="card-title" style="color:var(--purple)">🤖 المحلل الذكي</div>
+      <div class="small muted" style="margin-bottom:10px;line-height:1.8">يجمع بيانات الفترة في ملخص جاهز. انسخيه والصقيه في محادثة Claude، ويطلع لك تحليل وتوصيات مبنية على أرقام نجد ومكتبة المعرفة.</div>
+      <label class="f">الفترة</label>
+      <div class="seg" id="aiPeriod" style="margin-bottom:10px"></div>
+      <label class="f">نوع التحليل</label>
+      <select class="inp" id="aiFocus" style="margin-bottom:10px">
+        <option value="report">📊 تقرير شامل + توصيات</option>
+        <option value="match">⚽ ملاحظات آخر مباراة</option>
+        <option value="tournament">🏆 خطة تحضير للبطولة الجاية</option>
+        <option value="fcpro">🪜 خطة FC Pro Ladder</option>
+        <option value="mental">💚 التعب والنوم والجانب الذهني</option>
+        <option value="question">❓ سؤال مخصص</option>
+      </select>
+      <textarea class="inp" id="aiQuestion" placeholder="اكتبي سؤالك… مثال: ليش أخسر المباريات بعد الساعة 12؟" style="display:none;margin-bottom:10px"></textarea>
+      <div class="row">
+        <button class="btn primary" style="flex:1;background:linear-gradient(135deg,var(--purple),#7c4dff);color:#fff" onclick="copyAnalystPrompt()">📋 نسخ الملخص</button>
+        <a class="btn" href="https://claude.ai/new" target="_blank" rel="noopener" style="text-decoration:none">↗️ افتح Claude</a>
+      </div>
+      <div class="small muted" id="aiInfo" style="margin-top:8px"></div>
+      <details style="margin-top:8px"><summary class="small" style="cursor:pointer;color:var(--text2)">عرض الملخص</summary><textarea class="inp" id="aiPreview" readonly style="min-height:220px;font-size:11px;direction:rtl;margin-top:6px"></textarea></details>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📚 مكتبة المعرفة</div>
+      <div class="small muted" style="margin-bottom:8px;line-height:1.8">مبادئ المدرب، والتكتيكات والتشكيلات، وميتا FC 27 الحالية، وملاحظات عن الخصوم والمحترفين. المحلل الذكي يعتمد عليها في توصياته.</div>
+      <div class="fgrid" style="grid-template-columns:140px 1fr">
+        <select class="inp" id="kb-cat"><option value="principle">🧠 مبادئ المدرب</option><option value="tactic">📐 تكتيك / تشكيلة</option><option value="meta">🎮 ميتا FC 27</option><option value="opponent">🔍 خصوم</option><option value="pro">⭐ محترفين</option></select>
+        <input class="inp" id="kb-text" placeholder="مثال: ضد 4-2-2-2 نلعب 4-1-2-1-2 ونضغط على الأطراف" onkeydown="if(event.key==='Enter')postKnowledge()">
+      </div>
+      <button class="btn" onclick="postKnowledge()">➕ إضافة للمكتبة</button>
+      <div id="kbList" style="margin-top:10px"></div>
+    </div>
+
     <div class="card coachonly" id="taskFormCard">
       <div class="card-title">➕ مهمة تدريب جديدة</div>
       <div class="fgrid">
@@ -1251,7 +1304,16 @@ const FC_GAUGES = [
   {key:'shotAcc',        re:/shot\s*accuracy/i},
   {key:'dribbleSuccess', re:/dribble\s*success/i},
 ];
-const FC_COLS = {left:[0.333,0.381], right:[0.617,0.658], label:[0.395,0.605]};  // right edge stops before the scrollbar
+// every row on each tab (canonical English labels as shown in-game)
+const FC_EXT_LABELS = {
+  summary:   ['Possession %','Ball Recovery Time (Seconds)','Shots','Expected Goals','Passes','Tackles','Tackles Won','Interceptions','Saves','Fouls Committed','Offsides','Corners','Free Kicks','Penalty Kicks','Yellow Cards','Red Cards'],
+  shooting:  ['Total Shots','On Target','Off Target','Blocked','Normal','Finesse','Header','Power','Volley','Chip','Set Pieces','Inside the Box','Outside the Box','Near Side','Far Side'],
+  passing:   ['Total Passes','Completed','Intercepted','Offside','Other','Ground','Lob','Through','Lobbed Through','Cross','Set Pieces','Key Pass','First Time','Pass and Go','Down Wing','Breakaway'],
+  defending: ['Standing Tackles','Standing Tackles Won','Sliding Tackles','Sliding Tackles Won','Interceptions','Blocks','Saves','Clearances','Offensive Duels Won','Defensive Duels Won','Aerial Duels Won','Beaten By Opponent','Fouls Committed','Penalties Committed','Yellow Cards','Red Cards'],
+  possession: null,
+};
+const FC_GOAL_ROWS=['Normal','Finesse','Header','Power','Volley','Chip','Set Pieces','Inside the Box','Outside the Box','Near Side','Far Side'];
+const FC_COLS = {left:[0.344,0.381], right:[0.617,0.6545], label:[0.395,0.605]};  // right edge stops before the scrollbar
 
 // dark → white background, white text → black, and drop everything coloured (bars, rings, pitch maps, logos)
 function _prepCanvas(img, maxW, allowUp){
@@ -1261,7 +1323,7 @@ function _prepCanvas(img, maxW, allowUp){
   const d=x.getImageData(0,0,W,H), p=d.data;
   for(let i=0;i<p.length;i+=4){
     const r=p[i],g=p[i+1],b=p[i+2], mx=Math.max(r,g,b), mn=Math.min(r,g,b);
-    let v = (mx-mn>70) ? 0 : (0.299*r+0.587*g+0.114*b);   // coloured pixel → background
+    let v = (mx-mn>45) ? 0 : (0.299*r+0.587*g+0.114*b);   // coloured pixel → background
     v = v<120 ? 255 : Math.max(0, 255-(v-120)*2.2);          // light text → dark on white
     p[i]=p[i+1]=p[i+2]=v;
   }
@@ -1270,11 +1332,11 @@ function _prepCanvas(img, maxW, allowUp){
 }
 function _loadImg(file){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error('تعذّر فتح الصورة')); i.src=URL.createObjectURL(file); }); }
 
-async function _ocrRect(worker, src, x0,y0,x1,y1, psm){
+async function _ocrRect(worker, src, x0,y0,x1,y1, psm, scale){
   const W=src.width,H=src.height;
   const r={x:Math.max(0,Math.round(x0)), y:Math.max(0,Math.round(y0))}; r.w=Math.min(W-r.x,Math.round(x1-x0)); r.h=Math.min(H-r.y,Math.round(y1-y0));
   if(r.w<6||r.h<6) return '';
-  const S = r.h<60 ? 2 : 1, pad=Math.round(r.h*0.35);
+  const S = scale || (r.h<60 ? 2 : 1), pad=Math.round(r.h*0.35);
   const c=document.createElement('canvas'); c.width=(r.w+pad*2)*S; c.height=(r.h+pad*2)*S;
   const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.imageSmoothingQuality='high';
   x.drawImage(src,r.x,r.y,r.w,r.h,pad*S,pad*S,r.w*S,r.h*S);
@@ -1287,6 +1349,9 @@ async function _ocrNum(worker, src, x0,y0,x1,y1, pick){
   let t=await _ocrRect(worker,src,x0,y0,x1,y1,'7'); let n=_nums(t);
   if(!n.length){ t=await _ocrRect(worker,src,x0,y0,x1,y1,'8'); n=_nums(t); }
   if(!n.length){ t=await _ocrRect(worker,src,x0,y0,x1,y1,'10'); n=_nums(t); }
+  if(!n.length && /[a-z"]/i.test(t)){ // letters where a number must be (e.g. "11" read as "n") → read it much bigger
+    t=await _ocrRect(worker,src,x0,y0,x1,y1,'7',4); n=_nums(t);
+  }
   if(!n.length) return null;
   return pick==='last'? n[n.length-1] : n[0];
 }
@@ -1319,25 +1384,41 @@ async function _readFc(img, {langs, onProgress}){
   const allowed = tab ? new Set(FC_TAB_KEYS[tab]) : new Set(FC_TAB_KEYS.summary.concat(['shotsOnTarget']));
   const out={left:{}, right:{}, found:[], score:null, teams:null, tab, rawText:data.text};
 
-  // table rows: label words inside the centre column
-  const labelRows=[];
+  // table rows: every label in the centre column. Core stats go to left/right, everything else to ext.
+  out.ext={};
+  const extList = tab ? (FC_EXT_LABELS[tab]||null) : null;
+  const tableRows=[];
   for(const r of rows){
     const lw=r.words.filter(w=>{ const cx=(w.x0+w.x1)/2/lay.width; return cx>FC_COLS.label[0] && cx<FC_COLS.label[1] && /[a-z]/i.test(w.text) && parseNumToken(w.text)===null; });
     if(!lw.length || r.cy<lay.height*0.2) continue;
     const txt=lw.map(w=>w.text).join(' ');
-    const m=matchStatLabel(txt); if(!m || !allowed.has(m.key)) continue;
-    if(labelRows.some(x=>x.key===m.key)) continue;
-    labelRows.push({key:m.key, cy:r.cy*k, h:Math.max(...lw.map(w=>w.y1-w.y0))*k});
+    const m=matchStatLabel(txt);
+    const core = m && allowed.has(m.key) && !tableRows.some(x=>x.key===m.key) ? m.key : null;
+    let ext=null;
+    if(extList){ let best=null; for(const L of extList){ const sc=_sim(_normLabel(txt),_normLabel(L)); if(!best||sc>best.sc) best={L,sc}; } if(best && best.sc>=0.8) ext=best.L; }
+    else if(tab==='possession' || !tab){ const t=txt.replace(/[^A-Za-z %]/g,' ').replace(/\s+/g,' ').trim(); if(t.length>=3 && !/^overall/i.test(t)) ext=t; }
+    if(ext && tableRows.some(x=>x.ext===ext)) ext=null;
+    if(!core && !ext) continue;
+    tableRows.push({key:core, ext, cy:r.cy*k, h:Math.max(...lw.map(w=>w.y1-w.y0))*k});
   }
-  const total=labelRows.length+FC_GAUGES.length*2+2; let done=0;
+  const total=tableRows.length+FC_GAUGES.length*2+2; let done=0;
   const tick=()=>{ if(onProgress) onProgress('reading values', (++done)/total); };
-  for(const r of labelRows){
-    const def=STAT_DEFS.find(d=>d.key===r.key), y0=r.cy-r.h*0.95, y1=r.cy+r.h*0.95;
+  for(const r of tableRows){
+    const def=r.key?STAT_DEFS.find(d=>d.key===r.key):{key:'ext',kind:'float'}, y0=r.cy-r.h*0.95, y1=r.cy+r.h*0.95;
     const lv=_fixFc(def, await _ocrNum(worker, full.canvas, FC_COLS.left[0]*W, y0, FC_COLS.left[1]*W, y1, 'first'));
     const rv=_fixFc(def, await _ocrNum(worker, full.canvas, FC_COLS.right[0]*W, y0, FC_COLS.right[1]*W, y1, 'last'));
     tick();
-    if(lv!=null) out.left[r.key]=lv; if(rv!=null) out.right[r.key]=rv;
-    if(lv!=null||rv!=null) out.found.push(r.key);
+    if(r.key){ if(lv!=null) out.left[r.key]=lv; if(rv!=null) out.right[r.key]=rv; if(lv!=null||rv!=null) out.found.push(r.key); }
+    if(r.ext && (lv!=null||rv!=null)){
+      const e={l:lv, r:rv};
+      // shooting rows by type / distance / aim also show goals next to a ball icon
+      if(tab==='shooting' && FC_GOAL_ROWS.includes(r.ext)){
+        const lg=await _ocrNum(worker, full.canvas, 0.382*W, y0, 0.404*W, y1, 'first');
+        const rg=await _ocrNum(worker, full.canvas, 0.598*W, y0, 0.617*W, y1, 'last');
+        e.lg = lg!=null && lg<=(lv??99) ? lg : 0; e.rg = rg!=null && rg<=(rv??99) ? rg : 0;
+      }
+      out.ext[(tab||'other')+':'+r.ext]=e;
+    }
   }
   // gauges: the % sits in a ring right above its caption
   for(const g of FC_GAUGES){
@@ -1489,6 +1570,14 @@ const STAT_UI = {
   red:           {ar:'بطاقات حمراء', en:'Red', step:1},
 };
 const STAT_KEYS = Object.keys(STAT_UI);
+// every extra row read from the Match Facts tabs (key = "tab:English label")
+const EXT_TABS={shooting:'🎯 التسديد',passing:'🔵 التمرير',defending:'🛡 الدفاع',possession:'⚽ الاستحواذ',summary:'📋 الملخص',other:'📋 أخرى'};
+const EXT_AR={
+  'Total Shots':'كل التسديدات','On Target':'على المرمى','Off Target':'خارج المرمى','Blocked':'مصدودة','Normal':'عادية','Finesse':'فنيس','Header':'رأسية','Power':'باور','Volley':'طائرة','Chip':'لوب','Set Pieces':'كرات ثابتة','Inside the Box':'داخل الصندوق','Outside the Box':'خارج الصندوق','Near Side':'القائم القريب','Far Side':'القائم البعيد',
+  'Total Passes':'كل التمريرات','Completed':'مكتملة','Intercepted':'مقطوعة','Offside':'تسلل','Other':'أخرى','Ground':'أرضية','Lob':'عالية','Through':'بينية','Lobbed Through':'بينية عالية','Cross':'عرضية','Key Pass':'مفتاحية','First Time':'لمسة وحدة','Pass and Go':'مرر وانطلق','Down Wing':'على الطرف','Breakaway':'انفراد',
+  'Standing Tackles':'تدخلات واقفة','Standing Tackles Won':'واقفة ناجحة','Sliding Tackles':'تدخلات انزلاقية','Sliding Tackles Won':'انزلاقية ناجحة','Interceptions':'اعتراضات','Blocks':'صدّ','Saves':'تصديات','Clearances':'إبعاد','Offensive Duels Won':'التحامات هجومية ناجحة','Defensive Duels Won':'التحامات دفاعية ناجحة','Aerial Duels Won':'التحامات هوائية ناجحة','Beaten By Opponent':'تجاوزها الخصم','Fouls Committed':'أخطاء','Penalties Committed':'تسببت بجزاء','Yellow Cards':'صفراء','Red Cards':'حمراء',
+};
+const extTab=k=>k.split(':')[0], extLabel=k=>k.slice(k.indexOf(':')+1), extAr=k=>EXT_AR[extLabel(k)]||extLabel(k);
 
 // ══════════════════════════════════════
 // STATE
@@ -1620,14 +1709,14 @@ function toRow(m){
   return { id:m.id, player:PLAYER, season:APP.season, date:m.date, match_time:m.time||null, mode:m.mode,
     event_id:m.eventId||null, opponent:m.opponent||null, formation:m.formation||null, opp_formation:m.oppFormation||null,
     goals_for:m.gf, goals_against:m.ga, decided:m.decided||'FT', pen_for:m.penFor??null, pen_against:m.penAgainst??null,
-    result:resultOf(m), stats:Object.assign({}, m.me||{}, m.fcp?{_fcp:m.fcp}:{}), opp_stats:m.opp||{}, note:m.note||null, photo_urls:m.photos||[],
+    result:resultOf(m), stats:Object.assign({}, m.me||{}, m.fcp?{_fcp:m.fcp}:{}, m.ext?{_ext:m.ext}:{}), opp_stats:m.opp||{}, note:m.note||null, photo_urls:m.photos||[],
     source:m.source||'manual', division:m.division||null, updated_at:m.updatedAt||new Date().toISOString() };
 }
 function fromRow(r){
   return { id:Number(r.id), date:r.date, time:r.match_time||'', mode:r.mode, eventId:r.event_id||'', opponent:r.opponent||'',
     formation:r.formation||'', oppFormation:r.opp_formation||'', gf:r.goals_for||0, ga:r.goals_against||0,
     decided:r.decided||'FT', penFor:r.pen_for, penAgainst:r.pen_against, result:r.result,
-    me:(({_fcp,...rest})=>rest)(r.stats||{}), fcp:(r.stats||{})._fcp||null, opp:r.opp_stats||{}, note:r.note||'', photos:r.photo_urls||[], source:r.source||'manual', division:r.division||'',
+    me:(({_fcp,_ext,...rest})=>rest)(r.stats||{}), fcp:(r.stats||{})._fcp||null, ext:(r.stats||{})._ext||null, opp:r.opp_stats||{}, note:r.note||'', photos:r.photo_urls||[], source:r.source||'manual', division:r.division||'',
     updatedAt:r.updated_at||'' };
 }
 
@@ -1937,6 +2026,7 @@ function resetForm(){
   document.getElementById('f-gf').value=0; document.getElementById('f-ga').value=0;
   document.querySelectorAll('#statTable input').forEach(i=>{ i.value=''; i.classList.remove('ocr','miss'); });
   document.getElementById('shotThumbs').innerHTML='';
+  form.ext=null; renderExtForm();
   document.getElementById('ocrStatus').classList.remove('show');
   document.getElementById('sideRow').style.display='none';
   document.getElementById('formTitle').textContent='➕ مباراة جديدة';
@@ -1959,6 +2049,7 @@ function readForm(){
     result: form.result || (gf>ga?'W':gf<ga?'L':'D'),
     me, opp, note:document.getElementById('f-note').value.trim(), source:form.source,
     division: form.mode==='rivals' ? (document.getElementById('f-div').value||'') : '',
+    ext: form.ext && Object.keys(form.ext).length ? JSON.parse(JSON.stringify(form.ext)) : null,
     fcp: form.mode==='ladder' ? readFp() : null,
   };
 }
@@ -2002,6 +2093,7 @@ function editMatch(id){
   document.getElementById('f-note').value=m.note||'';
   document.getElementById('f-gf').value=m.gf; document.getElementById('f-ga').value=m.ga;
   document.getElementById('f-div').value=m.division||'';
+  form.ext = m.ext ? JSON.parse(JSON.stringify(m.ext)) : null; renderExtForm();
   document.getElementById('f-rating').value=m.fcp?.rating??''; document.getElementById('f-delta').value=m.fcp?.delta??'';
   setMode(m.mode); if(m.fcp?.ladder) document.getElementById('f-fpl').value=m.fcp.ladder; setDecided(m.decided||'FT'); updateOppHint();
   document.getElementById('f-penf').value=m.penFor??''; document.getElementById('f-pena').value=m.penAgainst??'';
@@ -2050,7 +2142,7 @@ async function handleShots(fileList){
 
   // keep what earlier screenshots of this match already read — each new image only fills the gaps
   const prev=form.ocr;
-  const merged={left:{...(prev?.left||{})},right:{...(prev?.right||{})},score:prev?.score||null,teams:prev?.teams||null,tabs:[...(prev?.tabs||[])],ladder:prev?.ladder||null};
+  const merged={left:{...(prev?.left||{})},right:{...(prev?.right||{})},score:prev?.score||null,teams:prev?.teams||null,tabs:[...(prev?.tabs||[])],ladder:prev?.ladder||null,ext:{...(prev?.ext||{})}};
   const steps={'loading tesseract core':'تحميل محرك القراءة…','initializing tesseract':'تجهيز…','loading language traineddata':'تحميل اللغة…','initializing api':'تجهيز…','recognizing text':'قراءة الصورة…','reading values':'قراءة الأرقام…'};
   try{
     for(let i=0;i<files.length;i++){
@@ -2062,6 +2154,7 @@ async function handleShots(fileList){
       if(!merged.teams && res.teams) merged.teams=res.teams;
       if(res.tab){ merged.tabs=merged.tabs||[]; if(!merged.tabs.includes(res.tab)) merged.tabs.push(res.tab); }
       if(res.kind==='ladder' && res.ladder) merged.ladder=res.ladder;
+      if(res.ext) for(const [k,v] of Object.entries(res.ext)) if(!merged.ext[k]) merged.ext[k]=v;
     }
   }catch(e){
     ocrMsg(`⚠️ ${esc(e.message||'صار خطأ بالقراءة')} — تقدرين تعبّين الأرقام يدويًا`,0); console.error(e); return;
@@ -2098,6 +2191,12 @@ function applyOcr(){
   if(oppName && !document.getElementById('f-opp').value) document.getElementById('f-opp').value=oppName;
   if(!showAdv && STAT_KEYS.some(k=>!STAT_UI[k].core && (r.left[k]!=null||r.right[k]!=null))) toggleAdv();
   const ladTxt = r.ladder ? applyLadderShot(r) : '';
+  if(r.ext && Object.keys(r.ext).length){
+    const mine=me==='left';
+    form.ext={}; for(const [k,v] of Object.entries(r.ext)) form.ext[k]={me:mine?v.l:v.r, op:mine?v.r:v.l, meG:mine?v.lg:v.rg, opG:mine?v.rg:v.lg};
+    renderExtForm();
+  }
+  const extN=form.ext?Object.keys(form.ext).length:0;
   if(!filled && ladTxt){ ocrMsg(ladTxt+'<br><span class="muted">ارفعي كمان صورة الإحصائيات (الملخص) عشان تنعبّى الأرقام والسكور.</span>',1); return; }
   if(!filled){ ocrMsg('⚠️ ما قدرت أقرأ أرقام من الصورة. تأكدي إنها شاشة الإحصائيات وواضحة — أو عبّيها يدويًا.',0); return; }
   const TAB_AR={summary:'الملخص',shooting:'التسديد',passing:'التمرير',defending:'الدفاع',possession:'الاستحواذ'};
@@ -2105,9 +2204,20 @@ function applyOcr(){
   const myName=r.teams?.[me]||'';
   const sideTxt = form.sideAuto ? `<br>⚽ <b>${esc(myName)}</b> على ${me==='left'?'اليسار':'اليمين'} — عرفتها من اسم الفريق`
     : r.teams ? `<br>⚠️ ما قدرت أتأكد أي جهة لفريقكم — تأكدي من الاختيار تحت (${esc(r.teams.left||'؟')} يسار · ${esc(r.teams.right||'؟')} يمين)` : '';
-  ocrMsg(`✅ قريت <b class="num">${filled}</b> رقم${tabsTxt}${r.score?` + السكور <b class="num">${r.score[me]}–${r.score[op]}</b>`:''}. الخانات <span style="color:var(--green)">الخضراء</span> من الصورة${missing.length?`، و<span style="color:var(--gold)">الصفراء</span> ما انقرت (${[...new Set(missing)].slice(0,4).join('، ')})`:''} — راجعيها قبل الحفظ.${sideTxt}${ladTxt?'<br>'+ladTxt:''}`,1);
+  ocrMsg(`✅ قريت <b class="num">${filled}</b> رقم${tabsTxt}${r.score?` + السكور <b class="num">${r.score[me]}–${r.score[op]}</b>`:''}. الخانات <span style="color:var(--green)">الخضراء</span> من الصورة${missing.length?`، و<span style="color:var(--gold)">الصفراء</span> ما انقرت (${[...new Set(missing)].slice(0,4).join('، ')})`:''} — راجعيها قبل الحفظ.${extN?`<br>📋 وكمان <b class="num">${extN}</b> إحصائية مفصّلة (افتحي "إحصائيات مفصّلة" تحت الجدول)`:''}${sideTxt}${ladTxt?'<br>'+ladTxt:''}`,1);
 }
 // FC Pro ladder result screen → mode, ladder, rating, change, result
+function renderExtForm(){
+  const box=document.getElementById('extBox'), ext=form.ext||{}, keys=Object.keys(ext);
+  if(!keys.length){ box.style.display='none'; document.getElementById('extRows').innerHTML=''; return; }
+  box.style.display='block';
+  document.getElementById('extSummary').textContent=`📋 إحصائيات مفصّلة (${keys.length})`;
+  const tabs=[...new Set(keys.map(extTab))];
+  document.getElementById('extRows').innerHTML=tabs.map(t=>`<div class="ext-tab">${EXT_TABS[t]||t}</div>`+keys.filter(k=>extTab(k)===t).map(k=>{ const v=ext[k];
+    return `<div class="ext-row"><div><input type="number" inputmode="decimal" value="${v.me??''}" oninput="form.ext['${k.replace(/'/g,"\\'")}'].me=num(this.value)">${v.meG?`<div class="ext-g">⚽ ${v.meG}</div>`:''}</div>
+      <div class="lbl">${esc(extAr(k))}<span>${esc(extLabel(k))}</span></div>
+      <div><input type="number" inputmode="decimal" value="${v.op??''}" oninput="form.ext['${k.replace(/'/g,"\\'")}'].op=num(this.value)">${v.opG?`<div class="ext-g">⚽ ${v.opG}</div>`:''}</div></div>`; }).join('')).join('');
+}
 function applyLadderShot(r){
   const L=r.ladder; if(L.rating==null && L.delta==null) return '';
   setMode('ladder');
@@ -2152,7 +2262,17 @@ function matchDetail(m){
     ${(m.photos||[]).length?`<div class="thumbs">${m.photos.map(u=>`<img src="${esc(u)}" onclick="event.stopPropagation();openImg('${esc(u)}')">`).join('')}</div>`:''}
     ${videos.filter(v=>v.matchId===m.id).map(v=>`<div class="small" style="margin-top:6px">🎬 <a style="color:var(--accent);cursor:pointer" onclick="openVideo(${v.id})">${esc(v.title||'فيديو')}</a> <span class="muted">(${vtypeOf(v.type).label})</span></div>`).join('')}
     <div class="row" style="margin-top:10px"><button class="btn" onclick="editMatch(${m.id})">✏️ تعديل</button><button class="btn" onclick="addVideoForMatch(${m.id})">🎬 أضف فيديو</button><button class="btn danger" onclick="deleteMatch(${m.id})">🗑 حذف</button></div>
+    ${m.ext?extDetailHtml(m.ext):''}
     ${threadHtml('match', m.id)}`;
+}
+function extDetailHtml(ext){
+  const keys=Object.keys(ext); if(!keys.length) return '';
+  const tabs=[...new Set(keys.map(extTab))].filter(t=>t!=='summary');
+  if(!tabs.length) return '';
+  return `<details style="margin-top:8px" onclick="event.stopPropagation()"><summary class="small" style="cursor:pointer;color:var(--accent);font-weight:700">📋 الإحصائيات المفصّلة</summary>`+
+    tabs.map(t=>`<div class="ext-tab">${EXT_TABS[t]||t}</div>`+keys.filter(k=>extTab(k)===t).map(k=>{ const v=ext[k];
+      const fm=x=>x==null?'—':String(x); const g=(v.meG||v.opG)?` <span style="color:var(--gold);font-size:10px">⚽ ${v.meG||0}–${v.opG||0}</span>`:'';
+      return cmpRow(extAr(k)+g, v.me, v.op, fm); }).join('')).join('')+`</details>`;
 }
 function renderMatchList(){
   const list=document.getElementById('matchList');
@@ -2241,6 +2361,7 @@ function renderStats(){
   lineChart('chXg',{labels:xgM.map(m=>m.date), series:[{name:settings.name,color:'var(--s-me)',values:xgM.map(m=>m.me?.xg??null)},{name:'الخصم',color:'var(--s-opp)',values:xgM.map(m=>m.opp?.xg??null)}], yMin:0, fmt:v=>f1(v), detail:i=>{const m=xgM[i];return `${fmtDate(m.date)} — النتيجة ${m.gf}–${m.ga}`;}, empty:'سجّلي xG في المباريات عشان يطلع هنا'});
   renderCompare(f);
   renderDaily();
+  renderExtStats(f);
   renderFatigue(f);
   renderModeTable(f);
   renderOppTable(f);
@@ -3016,6 +3137,35 @@ function tickTimer(){
     g.innerHTML= (ms.length? `هالجلسة: <b class="num">${ms.length}</b> مباراة · <b class="num">${w}</b> فوز${h>=0.5?` · <span class="num">${(ms.length/h).toFixed(1)}</span> مباراة/ساعة`:''}` : 'سجّلي المباريات وهي شغّالة وتنحسب على الجلسة')+fpTxt; }
 }
 
+let extTabSel='shooting';
+function extAgg(f, k){ const x=f.filter(m=>m.ext&&m.ext[k]); return {n:x.length, me:avg(x.map(m=>m.ext[k].me)), op:avg(x.map(m=>m.ext[k].op)), meG:sum(x.map(m=>m.ext[k].meG||0)), meS:sum(x.map(m=>m.ext[k].me||0)), opG:sum(x.map(m=>m.ext[k].opG||0)), opS:sum(x.map(m=>m.ext[k].op||0))}; }
+function renderExtStats(f){
+  const has=t=>f.some(m=>m.ext&&Object.keys(m.ext).some(k=>extTab(k)===t));
+  const tabs=['shooting','passing','defending','possession'].filter(has);
+  const box=document.getElementById('extTable'), ins=document.getElementById('extInsights');
+  if(!tabs.length){ document.getElementById('extTabSeg').innerHTML=''; ins.innerHTML=''; box.innerHTML='<div class="chart-empty">ارفعي صور تبويبات التسديد والتمرير والدفاع مع المباريات، وتطلع هنا الإحصائيات المفصّلة.</div>'; return; }
+  if(!tabs.includes(extTabSel)) extTabSel=tabs[0];
+  document.getElementById('extTabSeg').innerHTML=tabs.map(t=>`<button class="${t===extTabSel?'active':''}" onclick="extTabSel='${t}';renderStats()">${EXT_TABS[t]}</button>`).join('');
+  const keys=[...new Set(f.flatMap(m=>m.ext?Object.keys(m.ext):[]).filter(k=>extTab(k)===extTabSel))];
+  const order=(FC_EXT_LABELS[extTabSel]||[]); keys.sort((x,y)=>(order.indexOf(extLabel(x))+99)%99-(order.indexOf(extLabel(y))+99)%99);
+  const rows=keys.map(k=>{ const g=extAgg(f,k); const goals=FC_GOAL_ROWS.includes(extLabel(k))&&extTabSel==='shooting';
+    return `<tr><td>${esc(extAr(k))}</td><td class="n">${f1(g.me)}</td><td class="n">${f1(g.op)}</td>${goals?`<td class="n">${g.meG} / ${g.meS}${g.meS?` <span class="muted" style="font-size:11px">(${Math.round(g.meG/g.meS*100)}%)</span>`:''}</td>`:'<td class="n muted">—</td>'}<td class="n muted">${g.n}</td></tr>`; }).join('');
+  box.innerHTML=`<table class="tbl"><thead><tr><th>الإحصائية</th><th>${esc(settings.name)}</th><th>الخصوم</th><th>أهداف / تسديدات</th><th>م</th></tr></thead><tbody>${rows}</tbody></table>`;
+  // a few readings that matter
+  const out=[]; const A=k=>extAgg(f,extTabSel+':'+k);
+  if(extTabSel==='passing'){ const t=A('Total Passes'), c=A('Completed'), i=A('Intercepted'), kp=A('Key Pass'), th=A('Through');
+    if(t.me&&c.me) out.push(`<div class="ins">نسبة إكمال التمرير <b class="num">${Math.round(c.me/t.me*100)}%</b>${t.op&&c.op?` مقابل <b class="num">${Math.round(c.op/t.op*100)}%</b> للخصوم`:''}، وتنقطع لها <b class="num">${f1(i.me)}</b> تمريرة بالمباراة.</div>`);
+    if(th.me!=null&&kp.me!=null) out.push(`<div class="ins">بينيات <b class="num">${f1(th.me)}</b> ومفتاحية <b class="num">${f1(kp.me)}</b> بالمباراة${th.op!=null?` — الخصوم ${f1(th.op)} بينية`:''}.</div>`); }
+  if(extTabSel==='shooting'){ const ib=A('Inside the Box'), ob=A('Outside the Box');
+    if(ib.meS+ob.meS>0) out.push(`<div class="ins ${ob.meS/(ib.meS+ob.meS)>0.35?'warn':'good'}"><b class="num">${Math.round(ib.meS/(ib.meS+ob.meS)*100)}%</b> من تسديداتها من داخل الصندوق، وتسجّل منها <b class="num">${ib.meS?Math.round(ib.meG/ib.meS*100):0}%</b>${ob.meS?` · من خارج الصندوق <b class="num">${Math.round(ob.meG/ob.meS*100)}%</b>`:''}.</div>`);
+    const best=FC_GOAL_ROWS.slice(0,7).map(l=>({l,g:A(l)})).filter(x=>x.g.meS>=3).sort((x,y)=>y.g.meG/y.g.meS-x.g.meG/x.g.meS)[0];
+    if(best) out.push(`<div class="ins good">أنجح نوع تسديد: <b>${EXT_AR[best.l]}</b> (<b class="num">${best.g.meG}</b> من <b class="num">${best.g.meS}</b>).</div>`); }
+  if(extTabSel==='defending'){ const st=A('Standing Tackles'), sw=A('Standing Tackles Won'), bb=A('Beaten By Opponent'), dd=A('Defensive Duels Won');
+    if(st.me&&sw.me!=null) out.push(`<div class="ins ${sw.me/st.me<0.45?'warn':'good'}">نجاح التدخل الواقف <b class="num">${Math.round(sw.me/st.me*100)}%</b>${st.op&&sw.op!=null?` مقابل <b class="num">${Math.round(sw.op/st.op*100)}%</b> للخصوم`:''}.</div>`);
+    if(bb.me!=null) out.push(`<div class="ins ${bb.me>(bb.op||0)?'warn':'good'}">الخصم يتجاوزها <b class="num">${f1(bb.me)}</b> مرة بالمباراة${bb.op!=null?` وهي تتجاوزه <b class="num">${f1(bb.op)}</b>`:''}.</div>`); }
+  ins.innerHTML=out.join('');
+}
+
 // Win-rate by hour inside a session (fatigue curve)
 function renderFatigue(f){
   const buckets=[0,1,2,3].map(()=>({n:0,w:0,xg:[]}));
@@ -3478,7 +3628,8 @@ function renderCoach(){
   document.getElementById('taskFilter').innerHTML=opts.map(o=>`<button class="${o.id===taskFilter?'active':''}" onclick="taskFilter='${o.id}';renderCoach()">${o.label} <span class="num">${o.id==='all'?tasks.length:tasks.filter(t=>t.status===o.id).length}</span></button>`).join('');
   const list=tasks.filter(t=>taskFilter==='all'||t.status===taskFilter).sort((x,y)=>(x.due||'9999').localeCompare(y.due||'9999')||y.at.localeCompare(x.at));
   document.getElementById('taskList').innerHTML=list.length? list.map(taskHtml).join('') : '<div class="muted small">ما فيه مهام هنا.</div>';
-  const feed=[...comments].sort((x,y)=>y.at.localeCompare(x.at)).slice(0,20);
+  renderAiCard(); renderKnowledge();
+  const feed=[...comments].filter(c=>c.target!=='kb').sort((x,y)=>y.at.localeCompare(x.at)).slice(0,20);
   document.getElementById('commentFeed').innerHTML=feed.length? feed.map(c=>{
     let where='', go='';
     if(c.target==='match'){ const m=matches.find(x=>x.id===c.targetId); where=m?`مباراة ${m.opponent?'ضد '+esc(m.opponent):''} ${m.gf}–${m.ga} · ${fmtDate(m.date)}`:'مباراة'; go=`openMatch(${c.targetId})`; }
@@ -3486,6 +3637,108 @@ function renderCoach(){
     else { const t=tasks.find(x=>x.id===c.targetId); where='📋 '+esc(t?.title||'مهمة'); go=`taskFilter='all';renderCoach()`; }
     return `<div class="cmt" style="cursor:pointer" onclick="${go}"><span class="who">${ROLE_ICON[c.role]||'💬'}</span><div class="body"><b>${esc(c.author)}</b> <span class="when">${relTime(c.at)} · ${where}</span><br>${linkify(c.text,c.target,c.targetId)}</div></div>`; }).join('')
     : '<div class="muted small">ما فيه تعليقات للحين — التعليقات تنكتب من تفاصيل المباراة أو الفيديو.</div>';
+}
+// ══════════════════════════════════════
+// AI ANALYST — copy-ready briefing for Claude + knowledge library
+// ══════════════════════════════════════
+let aiPeriod='week';
+const KB_CAT={principle:'🧠 مبادئ المدرب',tactic:'📐 تكتيك / تشكيلة',meta:'🎮 ميتا FC 27',opponent:'🔍 خصوم',pro:'⭐ محترفين'};
+function postKnowledge(){
+  const t=document.getElementById('kb-text').value.trim(); if(!t) return;
+  const c={id:uid(), date:todayKey(), target:'kb', targetId:0, cat:document.getElementById('kb-cat').value, text:t, author:authorName(), role:myRole()||'admin', at:new Date().toISOString()};
+  comments.push(c); persistLocal(); cloudUpsertItem('comment',c);
+  document.getElementById('kb-text').value=''; renderKnowledge(); toast('📚 انضافت للمكتبة');
+}
+function renderKnowledge(){
+  const list=comments.filter(c=>c.target==='kb').sort((x,y)=>(x.cat||'').localeCompare(y.cat||'')||y.at.localeCompare(x.at));
+  document.getElementById('kbList').innerHTML = list.length ? list.map(c=>`<div class="cmt"><span class="who">${(KB_CAT[c.cat]||'📚').split(' ')[0]}</span><div class="body"><span class="when">${KB_CAT[c.cat]||''} · ${esc(c.author)} · ${relTime(c.at)}${c.author===authorName()?` · <a style="cursor:pointer" onclick="removeComment(${c.id})">حذف</a>`:''}</span><br>${esc(c.text)}</div></div>`).join('')
+    : '<div class="muted small">المكتبة فاضية — كل ما زادت الملاحظات صارت التوصيات أدق.</div>';
+}
+function renderAiCard(){
+  const opts=[{id:'last',l:'آخر مباراة'},{id:'day',l:'اليوم'},{id:'week',l:'هالأسبوع'},{id:'30',l:'آخر 30 يوم'},{id:'season',l:'الموسم'}];
+  document.getElementById('aiPeriod').innerHTML=opts.map(o=>`<button class="${o.id===aiPeriod?'active':''}" onclick="aiPeriod='${o.id}';renderAiCard()">${o.l}</button>`).join('');
+  const f=document.getElementById('aiFocus'); f.onchange=()=>{ document.getElementById('aiQuestion').style.display=f.value==='question'?'block':'none'; if(f.value==='match'){ aiPeriod='last'; renderAiCard(); } };
+}
+function aiRange(){
+  const t=todayKey();
+  if(aiPeriod==='last'){ const m=matches[0]; return m?{from:m.date,to:m.date,only:[m],label:'آخر مباراة'}:{from:t,to:t,label:'آخر مباراة'}; }
+  if(aiPeriod==='day') return {from:t,to:t,label:'اليوم '+fmtDate(t)};
+  if(aiPeriod==='week'){ const P=periodOf('week',0); return {from:P.from,to:P.to,label:P.label}; }
+  if(aiPeriod==='30') return {from:keyOf(addDays(new Date(),-29)),to:t,label:'آخر 30 يوم'};
+  return {from:settings.seasonStart||'0000-01-01',to:t,label:'الموسم '+APP.season};
+}
+const n1=v=>v==null||isNaN(v)?'—':(Math.round(v*10)/10);
+function buildAnalystPrompt(){
+  const R0=aiRange(); const f=R0.only||matches.filter(m=>m.date>=R0.from&&m.date<=R0.to);
+  const focus=document.getElementById('aiFocus').value, q=document.getElementById('aiQuestion').value.trim();
+  const a=agg(f), L=[];
+  const FOCUS={
+    report:'اكتب تقرير أداء شامل للفترة: ملخص قصير، نقاط القوة، نقاط الضعف (بالأرقام)، الأسباب المحتملة، ثم 3 إلى 5 توصيات تدريب محددة وقابلة للقياس (مع تمرين عملي لكل واحدة داخل FC 27، مثل Practice Arena أو Skill Games أو Squad Battles أو مباريات ودية بهدف معيّن)، واقترح أهداف رقمية للأسبوع الجاي.',
+    match:'حلّل آخر مباراة بالتفصيل: وش صار بالأرقام مقارنة بمعدلها المعتاد، وين خسرت/كسبت المباراة، و3 ملاحظات عملية للمباراة الجاية.',
+    tournament:'جهّز خطة تحضير للبطولة الجاية بناءً على أرقامها: أولويات التدريب يوم بيوم لين البطولة، عدد المباريات وطول الجلسات المثالي حسب بيانات التعب، النوم، والجانب الذهني يوم البطولة.',
+    fcpro:'حلّل وضعها في FC Pro Ladder: هل تكمل اللعب أو توقف، كم مباراة باليوم، وأي وقت باليوم تلعب فيه (حسب نتايجها بالأوقات والتعب)، وخطة عملية للوصول لحد التأهل.',
+    mental:'ركّز على الجانب الذهني والجسدي: العلاقة بين النوم والريكفري والطاقة والنتايج، أثر طول الجلسات، وأي نمط في الأوقات أو بعد الخسارة المتتالية. اعطِ توصيات روتين (نوم، استراحات، قبل المباراة) بلغة داعمة.',
+    question:'جاوب على سؤال الطاقم تحت بالاعتماد على البيانات فقط، ووضّح إذا البيانات ما تكفي.'
+  };
+  L.push(`أنت محلل أداء ومدرب محترف في EA SPORTS FC 27 (Ultimate Team و FC Pro). تساعد طاقم لاعبة إسبورتس سعودية اسمها ${settings.name}.`);
+  L.push(`المطلوب: ${FOCUS[focus]}`);
+  if(focus==='question' && q) L.push(`سؤال الطاقم: ${q}`);
+  L.push(`قواعد: اكتب بالعربي (لهجة خليجية بسيطة)، استشهد بالأرقام من البيانات، لا تخترع أرقام أو معلومات مو موجودة، وإذا البيانات قليلة قلها بوضوح. معلوماتك عن ميتا FC 27 ممكن تكون قديمة — اعتمد على "مكتبة المعرفة" إذا موجودة. التوصيات يعتمدها المدرب قبل التنفيذ.`);
+  L.push(`
+# البيانات — ${R0.label} (${R0.from} → ${R0.to})`);
+  L.push(`## الملخص
+مباريات ${a.n} · فوز ${a.W} تعادل ${a.D} خسارة ${a.L} · نسبة الفوز ${n1(a.win)}% · أهداف لها/عليها بالمباراة ${n1(a.gf)}/${n1(a.ga)} · xG لها/عليها ${n1(a.xg)}/${n1(a.xga)} · (أهداف − xG) ${n1(a.finishing)} · دقة التسديد ${n1(a.shotAcc)}% · تحويل ${n1(a.conv)}% · دقة التمرير ${n1(a.passAcc)}% · استحواذ ${n1(a.poss)}% · نجاح الافتكاك ${n1(a.tackleWin)}% · وقت استعادة الكرة ${n1(a.recov)}ث (الخصوم ${n1(a.recovOpp)}ث)`);
+  const modes=MODES.map(md=>{ const x=f.filter(m=>m.mode===md.id); if(!x.length) return ''; const g=agg(x); return `- ${md.label}: ${g.n} مباراة، فوز ${n1(g.win)}%، ${n1(g.gf)}/${n1(g.ga)} أهداف`; }).filter(Boolean);
+  if(modes.length) L.push(`## حسب نوع المباراة
+${modes.join('\n')}`);
+  // detailed stats averages
+  const ek=[...new Set(f.flatMap(m=>m.ext?Object.keys(m.ext):[]))].filter(k=>extTab(k)!=='summary');
+  if(ek.length){ L.push('## الإحصائيات المفصّلة (متوسط المباراة: لها / الخصوم' + ' — وللتسديد: أهداف/تسديدات)');
+    L.push(ek.map(k=>{ const g=extAgg(f,k); return `- ${EXT_TABS[extTab(k)]||extTab(k)} · ${extAr(k)}: ${n1(g.me)} / ${n1(g.op)}${g.meG||g.opG?` · أهداف ${g.meG}/${g.meS}`:''}`; }).join('\n')); }
+  // matches
+  const ml=[...f].slice(0,25).map(m=>{ const e=m.me||{},o=m.opp||{}; return `- ${m.date} ${m.time||''} · ${modeOf(m.mode).label} · ضد ${m.opponent||'؟'} · ${m.gf}-${m.ga}${m.decided==='PEN'?' (ترجيح)':m.decided==='ET'?' (إضافي)':''} ${resultOf(m)} · xG ${n1(e.xg)}-${n1(o.xg)} · استحواذ ${n1(e.possession)} · تسديد ${e.shotsOnTarget??'?'}/${e.shots??'?'} · تمرير ${n1(e.passAcc)}%${m.fcp?.delta!=null?` · FC Pro ${m.fcp.delta>0?'+':''}${m.fcp.delta} (${m.fcp.rating})`:''}${m.formation?` · ${m.formation} ضد ${m.oppFormation||'?'}`:''}${m.note?` · ملاحظة: ${m.note}`:''}`; });
+  if(ml.length) L.push(`## المباريات (الأحدث أول)
+${ml.join('\n')}`);
+  // goals
+  const G=[]; for(const pt of ['day','week','month']){ const P=periodOf(pt,0), E=evalGoals(P); E.rows.forEach(x=>G.push(`- (${pt==='day'?'اليوم':pt==='week'?'الأسبوع':'الشهر'}) ${METRICS[x.it.metric].ar}: ${fmtMetric(x.it.metric,x.r.v)} من هدف ${x.it.op==='>='?'≥':'≤'} ${x.it.target} — ${x.st.t}`)); }
+  if(G.length) L.push(`## أهداف الطاقم الحالية
+${G.join('\n')}`);
+  // FC Pro
+  const F=fpState(fpAutoLadder()); if(F.LM.length||F.rating!=null) L.push(`## FC Pro — ${F.L.name}
+النقاط ${F.rating??'—'} · حد التأهل التقديري ${F.cutoff??'—'} · الفرق ${F.gap??'—'} · متوسط الربح +${n1(F.avgWin)} والخسارة −${n1(F.avgLoss)} · نسبة الحفاظ على النقاط ${n1(F.breakEven)}% · نسبة فوزها ${F.p!=null?Math.round(F.p*100)+'%':'—'} (${F.pSrc||''}) · معدل النقاط بالمباراة ${n1(F.exp)} · ${fpStatusTxt(F.L)}`);
+  // recovery
+  const D=daily.filter(d=>d.date>=R0.from&&d.date<=R0.to).sort((x,y)=>x.date.localeCompare(y.date));
+  if(D.length) L.push(`## النوم والريكفري (Whoop)
+${D.map(d=>{ const ms=matches.filter(m=>m.date===d.date); const w=ms.filter(m=>resultOf(m)==='W').length; return `- ${d.date}: نوم ${n1(d.sleep)}س · Recovery ${d.rec??'—'}% · HRV ${d.hrv??'—'} · طاقة ${d.energy??'—'}/5 · مزاج ${d.mood??'—'}/5 · مباريات ${ms.length} فوز ${w}${d.note?` · ${d.note}`:''}`; }).join('\n')}`);
+  // sessions + fatigue
+  const S=sessions.filter(s=>s.date>=R0.from&&s.date<=R0.to);
+  if(S.length){ const fb=[0,1,2,3].map(()=>({n:0,w:0})); const ss=sessions.map(s=>({s:new Date(s.start),e:new Date(s.end)}));
+    f.forEach(m=>{ const t=matchDT(m); const s=ss.find(x=>t>=x.s&&t<=x.e); if(!s) return; const b=fb[Math.min(3,Math.floor((t-s.s)/36e5))]; b.n++; if(resultOf(m)==='W') b.w++; });
+    L.push(`## جلسات اللعب
+${S.length} جلسة · ${n1(sum(S.map(s=>s.mins))/60)} ساعة · نسبة الفوز حسب ساعة الجلسة: ${fb.map((b,i)=>`س${i+1}${i===3?'+':''} ${b.n?Math.round(b.w/b.n*100)+'% ('+b.n+')':'—'}`).join(' · ')}`); }
+  // streams
+  const ST=streams.filter(s=>s.date>=R0.from&&s.date<=R0.to);
+  if(ST.length) L.push(`## البثوث (Twitch)
+${ST.length} بث · ${n1(sum(ST.map(s=>s.hours)))} ساعة · متابعين جدد ${sum(ST.map(s=>s.followers))}`);
+  // staff input
+  const C=comments.filter(c=>c.target!=='kb' && c.at.slice(0,10)>=R0.from).slice(-15).map(c=>`- ${c.author} (${ROLE_AR[c.role]||''}): ${c.text}`);
+  if(C.length) L.push(`## تعليقات الطاقم
+${C.join('\n')}`);
+  const T=tasks.slice(-10).map(t=>`- ${t.title} — ${({open:'مفتوحة',done:'خلصت',ok:'معتمدة'})[t.status]}${t.due?` (موعد ${t.due})`:''}`);
+  if(T.length) L.push(`## مهام التدريب
+${T.join('\n')}`);
+  const K=comments.filter(c=>c.target==='kb').map(c=>`- [${(KB_CAT[c.cat]||'').replace(/^\S+\s/,'')}] ${c.text}`);
+  L.push(`## مكتبة المعرفة (من الطاقم)
+${K.length?K.join('\n'):'(فاضية)'}`);
+  return {text:L.join('\n\n'), n:f.length};
+}
+async function copyAnalystPrompt(){
+  const {text,n}=buildAnalystPrompt();
+  document.getElementById('aiPreview').value=text;
+  let ok=false; try{ await navigator.clipboard.writeText(text); ok=true; }catch(e){}
+  if(!ok){ const t=document.getElementById('aiPreview'); t.closest('details').open=true; t.select(); try{ ok=document.execCommand('copy'); }catch(e){} }
+  document.getElementById('aiInfo').innerHTML = ok ? `✅ انسخ (${n} مباراة، ${text.length.toLocaleString('en')} حرف). افتحي Claude والصقيه.` : '⚠️ ما قدرت أنسخ تلقائيًا — افتحي "عرض الملخص" وانسخيه يدويًا.';
+  toast(ok?'📋 انسخ الملخص':'افتحي عرض الملخص وانسخيه');
 }
 function openMatch(id){ switchTab('matches'); listFilter='all'; openId=id; listLimit=Math.max(listLimit, matches.findIndex(m=>m.id===id)+5); renderMatchList(); setTimeout(()=>document.getElementById('mi-'+id)?.scrollIntoView({behavior:'smooth',block:'center'}),50); }
 function renderHomeTasks(){
@@ -3505,7 +3758,7 @@ function markSeen(){ lsSet(seenKey(), new Date().toISOString()); renderBadge(); 
 function renderBadge(){
   const b=document.getElementById('coachBadge'); if(!b) return;
   const since=lsGet(seenKey())||'0'; const me=authorName();
-  const n=comments.filter(c=>c.at>since&&c.author!==me).length + tasks.filter(t=>(t.at>since&&t.author!==me)||(t.doneAt&&t.doneAt>since&&myRole()!=='player')).length;
+  const n=comments.filter(c=>c.at>since&&c.author!==me&&c.target!=='kb').length + tasks.filter(t=>(t.at>since&&t.author!==me)||(t.doneAt&&t.doneAt>since&&myRole()!=='player')).length;
   b.style.display=n?'inline-block':'none'; b.textContent=n;
 }
 
