@@ -224,6 +224,23 @@ textarea.inp{resize:vertical;min-height:60px;}
 .zone{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;}
 .zone.g{background:rgba(0,230,118,.12);color:var(--green);} .zone.y{background:rgba(255,193,7,.12);color:var(--gold);} .zone.r{background:rgba(255,23,68,.12);color:#ff5c7a;}
 .scale{display:flex;gap:5px;}
+.gt-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:8px;}
+@media(min-width:640px){.gt-grid{grid-template-columns:1fr 1fr;}}
+.gt-row .gt-min{flex:0 0 64px;min-width:0;padding:6px 6px;font-size:12px;text-align:center;}
+.gt-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.gt-row span{font-size:12px;white-space:nowrap;min-width:30px;}
+.gt-row select{padding:6px 6px;font-size:12px;min-width:0;flex:1;}
+.gt-cols{display:grid;grid-template-columns:1fr;gap:14px;}
+@media(min-width:640px){.gt-cols{grid-template-columns:1fr 1fr;}}
+.gt-bar{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:6px;}
+.gt-bar>span:first-child{min-width:112px;}
+.gt-track{flex:1;height:8px;background:var(--surface3);border-radius:5px;overflow:hidden;}
+.gt-track div{height:100%;border-radius:5px;}
+.pre-check{background:var(--surface2);border-radius:12px;padding:10px 12px;margin-bottom:10px;}
+.pc-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.pc-row>span{font-size:12px;min-width:74px;}
+.pc-row .scale{flex:1;}
+.pc-row .scale button{padding:5px 0;font-size:14px;}
 .scale button{flex:1;padding:7px 0;border-radius:9px;border:1px solid var(--border);background:var(--surface3);color:var(--text2);font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;cursor:pointer;}
 .scale button.active{border-color:var(--accent);background:rgba(0,200,255,.14);color:var(--accent);}
 .day-row{display:grid;grid-template-columns:1.3fr repeat(4,1fr);gap:4px;align-items:center;font-size:12px;padding:7px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;margin-bottom:5px;cursor:pointer;}
@@ -296,7 +313,7 @@ textarea.inp{resize:vertical;min-height:60px;}
 .ro #matchFormCard,.ro #recFormCard,.ro #videoFormCard,.ro #gEditor,.ro .timer-btns,.ro .big-start,.ro .timer-card details,.ro .timer-card .seg,
 .ro .fp-inline,.ro .fp-inline + .small,.ro #rivalsBox select,.ro .ld-form,.ro [onclick="openGoalEditor()"],
 .ro [onclick^="edit"],.ro [onclick^="delete"],.ro [onclick^="save"],.ro [onclick^="add"],.ro [onclick="exportJSON()"],.ro [onclick^="goLive"],.ro [onclick^="endLive"],.ro #streamFormCard,.ro #slotFormCard,.ro .dows,
-.ro #panel-settings .card:not(#accountCard),.ro .backup-nudge,.ro #setupBanner{display:none !important;}
+.ro #futEdit,.ro .pre-check,.ro #tiltBox button,.ro #goalTagBox select,.ro #goalTagBox input,.ro #panel-settings .card:not(#accountCard),.ro .backup-nudge,.ro #setupBanner{display:none !important;}
 .coachonly{display:none;} .role-coach .coachonly,.role-admin .coachonly{display:block;}
 .playeronly{display:none;} .role-player .playeronly,.role-admin .playeronly{display:block;}
 /* COMMENTS + TASKS */
@@ -511,6 +528,7 @@ textarea.inp{resize:vertical;min-height:60px;}
         <span class="small muted" id="resultAuto">(تنحسب تلقائيًا من السكور)</span>
       </div>
 
+      <div id="goalTagBox" style="display:none;margin-bottom:12px"></div>
       <div class="row" style="justify-content:space-between;margin-bottom:6px;">
         <label class="f" style="margin:0">إحصائيات المباراة</label>
         <button class="btn" style="padding:4px 10px;font-size:11px;" onclick="toggleAdv()" id="advBtn">➕ كل الإحصائيات</button>
@@ -524,8 +542,9 @@ textarea.inp{resize:vertical;min-height:60px;}
       </details>
 
       <div class="fgrid" style="margin-top:12px;">
-        <div><label class="f">تشكيلة نجد</label><input type="text" class="inp ltr" id="f-form" placeholder="4-2-3-1"></div>
-        <div><label class="f">تشكيلة الخصم</label><input type="text" class="inp ltr" id="f-oform" placeholder="4-4-2"></div>
+        <div><label class="f">تشكيلة نجد</label><input type="text" class="inp ltr" id="f-form" placeholder="4-2-3-1" list="formList"><datalist id="formList"></datalist></div>
+        <div><label class="f">حوّلت لـ (اختياري)</label><input type="text" class="inp ltr" id="f-form2" placeholder="4-1-2-1-2" list="formList"></div>
+        <div><label class="f">تشكيلة الخصم</label><input type="text" class="inp ltr" id="f-oform" placeholder="4-4-2" list="formList"></div>
       </div>
       <label class="f">ملاحظات</label>
       <textarea class="inp" id="f-note" placeholder="وش صار؟ وش الغلطة المتكررة؟ وش اشتغل؟"></textarea>
@@ -591,6 +610,28 @@ textarea.inp{resize:vertical;min-height:60px;}
     <div class="card">
       <div class="card-title">🏆 FUT Champions — الويكند</div>
       <div id="futBox"></div>
+      <div id="futEdit" style="display:none;margin-top:14px;border-top:1px solid rgba(255,255,255,.12);padding-top:12px">
+        <div class="small muted" style="margin-bottom:6px">أي ويكند؟</div>
+        <div class="seg" id="futEdWk" style="margin-bottom:10px"></div>
+        <div class="fgrid">
+          <div><label class="f">الحالة</label><select class="inp" id="fe-mode" onchange="feModeChanged()">
+            <option value="finals">Finals — عادي</option>
+            <option value="challengers">Challengers (5 مباريات)</option>
+            <option value="skip">ما فتح / ما نشارك</option></select></div>
+          <div><label class="f">عدد المباريات</label><input class="inp" type="number" min="1" id="fe-games"></div>
+          <div><label class="f">هدف الانتصارات</label><input class="inp" type="number" min="0" id="fe-wins"></div>
+          <div style="grid-column:1/-1"><label class="f">يفتح</label><input class="inp" type="datetime-local" id="fe-start"></div>
+          <div style="grid-column:1/-1"><label class="f">يسكّر</label><input class="inp" type="datetime-local" id="fe-end"></div>
+          <div><label class="f">مباريات ما انسجلت</label><input class="inp" type="number" min="0" id="fe-adjP" placeholder="0"></div>
+          <div><label class="f">فوز منها</label><input class="inp" type="number" min="0" id="fe-adjW" placeholder="0"></div>
+        </div>
+        <label class="f">ملاحظة</label><input class="inp" id="fe-note" placeholder="مثال: ما وصلنا نقاط التأهل">
+        <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">
+          <button class="btn primary" onclick="saveFutWeek()">💾 حفظ</button>
+          <button class="btn" onclick="resetFutWeek()">↩︎ رجّع الافتراضي</button>
+          <button class="btn" onclick="document.getElementById('futEdit').style.display='none'">إلغاء</button>
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -806,6 +847,21 @@ textarea.inp{resize:vertical;min-height:60px;}
     </div>
 
     <div class="card">
+      <div class="card-title">⚽ كيف نسجّل وكيف تدخل علينا</div>
+      <div id="goalTypeBox"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🧩 التشكيلات</div>
+      <div id="formationBox"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🧠 الحالة الذهنية والخسارات المتتالية</div>
+      <div id="mentalBox"></div>
+    </div>
+
+    <div class="card">
       <div class="card-title">📋 الإحصائيات المفصّلة (متوسط المباراة)</div>
       <div class="seg" id="extTabSeg" style="margin-bottom:10px"></div>
       <div id="extInsights"></div>
@@ -913,6 +969,8 @@ textarea.inp{resize:vertical;min-height:60px;}
         <div><label class="f">بداية الأسبوع</label><select class="inp" id="set-weekStart"></select></div>
         <div><label class="f">يوم الراحة الاختياري</label><select class="inp" id="set-restDow"></select></div>
         <div><label class="f">ساعات النوم المطلوبة</label><input class="inp" type="number" step="0.5" min="0" id="set-sleepTarget"></div>
+        <div><label class="f">تنبيه التلت بعد كم خسارة متتالية</label><input class="inp" type="number" min="2" max="10" id="set-tiltL"></div>
+        <div><label class="f">تذكير استراحة كل (دقيقة، 0 = بدون)</label><input class="inp" type="number" min="0" step="15" id="set-tiltM"></div>
       </div>
     </div>
 
@@ -926,7 +984,9 @@ textarea.inp{resize:vertical;min-height:60px;}
         <div><label class="f">الساعة</label><input class="inp" type="time" id="set-futStartTime"></div>
         <div><label class="f">ينتهي يوم</label><select class="inp" id="set-futEndDow"></select></div>
         <div><label class="f">الساعة</label><input class="inp" type="time" id="set-futEndTime"></div>
+        <div><label class="f">أول ويكند بالموسم (اختياري)</label><input class="inp" type="date" id="set-futFrom"></div>
       </div>
+      <div class="small muted" style="margin:-4px 0 10px">لتعديل ويكند واحد بس (ما فتح، Challengers، وقت مختلف) استخدمي زر ✏️ في كرت FUT Champions.</div>
       <div class="fgrid">
         <div><label class="f">ديفجن الرايفلز الحالي</label><select class="inp" id="set-rivCur"></select></div>
         <div><label class="f">الديفجن المستهدف</label><select class="inp" id="set-rivTarget"></select></div>
@@ -1600,6 +1660,7 @@ const DEFAULT_SETTINGS = () => ({
   rivals: {current:'', target:'1'},
   ladder: {name:'اللادر', target:''},
   dayHours:5, weekHours:30, sleepTarget:8,
+  tilt: {losses:3, breakMins:90},
   weekStartDow:6,  // Saturday
   restDow:5,       // Friday = optional rest day (-1 = none)
   lastBackup:null,
@@ -1615,7 +1676,7 @@ const DEFAULT_SETTINGS = () => ({
 function normalizeSettings(s){
   const d=DEFAULT_SETTINGS();
   const out=Object.assign(d, s||{});
-  ['fut','rivals','ladder','fcpro'].forEach(k=>out[k]=Object.assign(DEFAULT_SETTINGS()[k], (s||{})[k]||{}));
+  ['fut','rivals','ladder','fcpro','tilt'].forEach(k=>out[k]=Object.assign(DEFAULT_SETTINGS()[k], (s||{})[k]||{}));
   return out;
 }
 let settings = normalizeSettings(lsJSON(K('settings'), {}));
@@ -1709,14 +1770,14 @@ function toRow(m){
   return { id:m.id, player:PLAYER, season:APP.season, date:m.date, match_time:m.time||null, mode:m.mode,
     event_id:m.eventId||null, opponent:m.opponent||null, formation:m.formation||null, opp_formation:m.oppFormation||null,
     goals_for:m.gf, goals_against:m.ga, decided:m.decided||'FT', pen_for:m.penFor??null, pen_against:m.penAgainst??null,
-    result:resultOf(m), stats:Object.assign({}, m.me||{}, m.fcp?{_fcp:m.fcp}:{}, m.ext?{_ext:m.ext}:{}), opp_stats:m.opp||{}, note:m.note||null, photo_urls:m.photos||[],
+    result:resultOf(m), stats:Object.assign({}, m.me||{}, m.fcp?{_fcp:m.fcp}:{}, m.ext?{_ext:m.ext}:{}, m.goals?{_gl:m.goals}:{}, m.formation2?{_f2:m.formation2}:{}), opp_stats:m.opp||{}, note:m.note||null, photo_urls:m.photos||[],
     source:m.source||'manual', division:m.division||null, updated_at:m.updatedAt||new Date().toISOString() };
 }
 function fromRow(r){
   return { id:Number(r.id), date:r.date, time:r.match_time||'', mode:r.mode, eventId:r.event_id||'', opponent:r.opponent||'',
     formation:r.formation||'', oppFormation:r.opp_formation||'', gf:r.goals_for||0, ga:r.goals_against||0,
     decided:r.decided||'FT', penFor:r.pen_for, penAgainst:r.pen_against, result:r.result,
-    me:(({_fcp,_ext,...rest})=>rest)(r.stats||{}), fcp:(r.stats||{})._fcp||null, ext:(r.stats||{})._ext||null, opp:r.opp_stats||{}, note:r.note||'', photos:r.photo_urls||[], source:r.source||'manual', division:r.division||'',
+    me:(({_fcp,_ext,_gl,_f2,...rest})=>rest)(r.stats||{}), formation2:(r.stats||{})._f2||'', fcp:(r.stats||{})._fcp||null, ext:(r.stats||{})._ext||null, goals:(r.stats||{})._gl||null, opp:r.opp_stats||{}, note:r.note||'', photos:r.photo_urls||[], source:r.source||'manual', division:r.division||'',
     updatedAt:r.updated_at||'' };
 }
 
@@ -1982,9 +2043,9 @@ function updateFutHint(){
   const dt=matchDT({date:document.getElementById('f-date').value||todayKey(), time:document.getElementById('f-time').value});
   const w=futWindowAt(dt);
   el.style.display='block';
-  if(dt>=w.start && dt<w.end){ const n=futMatchesIn(w).filter(m=>m.id!==form.editingId).length;
-    el.innerHTML=`🏆 هذي مباراة رقم <b class="num">${Math.min(n+1,settings.fut.games)}</b> من <b class="num">${settings.fut.games}</b> في ويكند ${fmtDate(keyOf(w.start))}`; }
-  else el.innerHTML='⚠️ وقت المباراة برا نافذة الويكند — بتنحسب FUT Champions بس ما تدخل في عدّاد الـ '+settings.fut.games;
+  if(!w.skip && !w.pre && dt>=w.start && dt<w.end){ const n=futMatchesIn(w).filter(m=>m.id!==form.editingId).length+w.adjP;
+    el.innerHTML=`🏆 هذي مباراة رقم <b class="num">${Math.min(n+1,w.G)}</b> من <b class="num">${w.G}</b> في ويكند ${fmtDate(keyOf(w.start))}`; }
+  else el.innerHTML='⚠️ وقت المباراة برا نافذة الويكند — بتنحسب FUT Champions بس ما تدخل في عدّاد الـ '+w.G;
 }
 function updateOppHint(){
   const v=document.getElementById('f-opp').value.trim().toLowerCase(); const el=document.getElementById('oppHint');
@@ -2014,19 +2075,94 @@ function fillEventSelect(sel){
 function fillOppList(){
   const names=[...new Set(matches.map(m=>m.opponent).filter(Boolean))].slice(0,50);
   document.getElementById('oppList').innerHTML=names.map(n=>`<option value="${esc(n)}">`).join('');
+  fillFormList();
 }
+
+// ══════════════════════════════════════
+// GOAL TYPES + FORMATIONS
+// ══════════════════════════════════════
+const GOAL_TYPES=[
+  {id:'l1',l:'هدف من L1',i:'🎮'},{id:'switch',l:'تغيير إشارة المدافع',i:'🔄'},{id:'defpass',l:'تمريرة من المدافع',i:'🛡'},{id:'counter',l:'مرتدة',i:'⚡'},
+  {id:'power',l:'باور شوت',i:'💥'},{id:'finesse',l:'فينس',i:'🌀'},{id:'extra',l:'اكسترا باس',i:'➕'},{id:'w2s',l:'جناح إلى مهاجم',i:'↗️'},{id:'kickoff',l:'قلتش السنترة',i:'⏱'},{id:'other',l:'ثاني',i:'•'}];
+// earlier labels — no longer offered, still shown on matches that used them
+const GOAL_LEGACY=[{id:'through',l:'بينية',i:'🎯'},{id:'cross',l:'عرضية',i:'↪️'},{id:'cutback',l:'كت باك',i:'↩️'},{id:'long',l:'تسديدة بعيدة',i:'🚀'},{id:'solo',l:'مراوغة فردية',i:'🌀'},
+  {id:'combo',l:'تمريرات قصيرة',i:'🔗'},{id:'setpiece',l:'كرة ثابتة',i:'🚩'},{id:'pen',l:'ضربة جزاء',i:'⚪'},{id:'error',l:'غلطة دفاعية',i:'❌'},{id:'rebound',l:'متابعة',i:'🔁'}];
+const gtOf=id=>GOAL_TYPES.find(t=>t.id===id)||GOAL_LEGACY.find(t=>t.id===id);
+function gtName(id){ const t=gtOf(id); return t?t.i+' '+t.l:''; }
+function gtOpts(v){ const list=GOAL_TYPES.concat(v&&!GOAL_TYPES.some(t=>t.id===v)&&gtOf(v)?[gtOf(v)]:[]);
+  return '<option value="">— النوع —</option>'+list.map(t=>`<option value="${t.id}" ${t.id===v?'selected':''}>${t.i} ${t.l}</option>`).join(''); }
+function renderGoalTags(){
+  const cl=id=>Math.min(15,Math.max(0,Math.round(+document.getElementById(id).value||0)));
+  const gf=cl('f-gf'), ga=cl('f-ga'), box=document.getElementById('goalTagBox');
+  form.goals=Object.assign({f:[],a:[],fm:[],am:[]}, form.goals||{});
+  if(!gf && !ga){ box.style.display='none'; box.innerHTML=''; return; }
+  const wasOpen=document.getElementById('gtDetails'); const open=wasOpen?wasOpen.open:true;
+  const row=(s,i)=>`<div class="gt-row"><span>${s==='f'?'⚽':'🥅'} ${i+1}</span><select class="inp" onchange="setGoalTag('${s}',${i},this.value)">${gtOpts(form.goals[s][i]||'')}</select><input class="inp gt-min num" type="number" inputmode="numeric" min="1" max="130" placeholder="دقيقة" value="${form.goals[s+'m'][i]??''}" oninput="setGoalMin('${s}',${i},this.value)"></div>`;
+  const col=(s,n)=>n?[...Array(n)].map((_,i)=>row(s,i)).join(''):'<div class="muted small">—</div>';
+  box.style.display='block';
+  box.innerHTML=`<details id="gtDetails" ${open?'open':''}><summary class="small" style="cursor:pointer;font-weight:700;color:var(--accent)">⚽ كيف جت الأهداف؟ <span class="muted" style="font-weight:400">(اختياري — النوع والدقيقة)</span></summary>
+    <div class="gt-grid"><div><div class="small" style="color:var(--green);font-weight:700;margin-bottom:6px">أهداف ${esc(settings.name)}</div>${col('f',gf)}</div>
+    <div><div class="small" style="color:#ff5c7a;font-weight:700;margin-bottom:6px">أهداف علينا</div>${col('a',ga)}</div></div></details>`;
+}
+function setGoalTag(s,i,v){ form.goals=Object.assign({f:[],a:[],fm:[],am:[]}, form.goals||{}); form.goals[s][i]=v; }
+function setGoalMin(s,i,v){ form.goals=Object.assign({f:[],a:[],fm:[],am:[]}, form.goals||{}); const n=Math.round(+v); form.goals[s+'m'][i]= v!=='' && n>=1 && n<=130 ? n : null; }
+function readGoalTags(gf,ga){
+  const g=form.goals; if(!g) return null;
+  const f=(g.f||[]).slice(0,gf), a=(g.a||[]).slice(0,ga), fm=(g.fm||[]).slice(0,gf), am=(g.am||[]).slice(0,ga);
+  const pad=(x,n,d)=>[...Array(n)].map((_,i)=>x[i]??d);
+  if(![...f,...a].some(Boolean) && ![...fm,...am].some(v=>v!=null)) return null;
+  const out={f:pad(f,gf,''), a:pad(a,ga,'')};
+  if(fm.some(v=>v!=null)) out.fm=pad(fm,gf,null); if(am.some(v=>v!=null)) out.am=pad(am,ga,null);
+  return out;
+}
+const GT_BUCKETS=[{to:15,l:'1–15'},{to:30,l:'16–30'},{to:45,l:'31–45'},{to:60,l:'46–60'},{to:75,l:'61–75'},{to:90,l:'76–90'},{to:999,l:'90+ / إضافي'}];
+const gtBucket=m=>GT_BUCKETS.findIndex(b=>m<=b.to);
+function goalTimeAgg(f){
+  const B=GT_BUCKETS.map(()=>({f:0,a:0})); let tf=0, ta=0, quick=0, quickOpp=0, lateA=0, lateF=0;
+  f.forEach(m=>{ const g=m.goals; if(!g) return;
+    (g.fm||[]).forEach(x=>{ if(x!=null){ B[gtBucket(x)].f++; tf++; if(x>=76) lateF++; } });
+    (g.am||[]).forEach(x=>{ if(x!=null){ B[gtBucket(x)].a++; ta++; if(x>=76) lateA++; } });
+    // conceded within 5 minutes after she scored / scored within 5 after conceding
+    (g.am||[]).forEach(x=>{ if(x!=null && (g.fm||[]).some(y=>y!=null && x-y>=0 && x-y<=5)) quick++; });
+    (g.fm||[]).forEach(x=>{ if(x!=null && (g.am||[]).some(y=>y!=null && x-y>=0 && x-y<=5)) quickOpp++; });
+  });
+  return {B,tf,ta,quick,quickOpp,lateA,lateF};
+}
+function gtSummary(list){ const c={}; (list||[]).filter(Boolean).forEach(x=>c[x]=(c[x]||0)+1); return Object.entries(c).sort((x,y)=>y[1]-x[1]).map(([k,n])=>gtName(k)+(n>1?' ×'+n:'')).join('، '); }
+function gtTimed(types,mins){ return (types||[]).map((t,i)=>({t,mn:(mins||[])[i]})).filter(x=>x.t||x.mn!=null).sort((p,q)=>(p.mn??999)-(q.mn??999)).map(x=>(x.t?gtName(x.t):'⚽')+(x.mn!=null?` <span class="num">${x.mn}'</span>`:'')).join('، '); }
+function goalTagsLine(m){ if(!m.goals) return ''; const hasMin=(m.goals.fm||[]).concat(m.goals.am||[]).some(v=>v!=null);
+  const x=hasMin?gtTimed(m.goals.f,m.goals.fm):gtSummary(m.goals.f), y=hasMin?gtTimed(m.goals.a,m.goals.am):gtSummary(m.goals.a); if(!x&&!y) return '';
+  return `<div class="small" style="margin-top:6px">${x?`⚽ أهدافها: ${x}`:''}${x&&y?' · ':''}${y?`🥅 عليها: ${y}`:''}</div>`; }
+function goalTypeAgg(f){ const T={f:{},a:{}}, tagged={f:0,a:0}, total={f:0,a:0};
+  f.forEach(m=>{ total.f+=m.gf||0; total.a+=m.ga||0; if(!m.goals) return; ['f','a'].forEach(s=>(m.goals[s]||[]).forEach(x=>{ if(x){ T[s][x]=(T[s][x]||0)+1; tagged[s]++; } })); });
+  return {T,tagged,total}; }
+
+const FORMATIONS=['4-1-2-1-2','4-1-2-1-2 (2)','4-2-3-1','4-2-3-1 (2)','4-2-2-2','4-2-1-3','4-3-3','4-3-3 (2)','4-3-3 (4)','4-3-2-1','4-3-1-2','4-4-2','4-4-2 (2)','4-4-1-1 (2)','4-1-4-1','4-1-3-2','4-2-4','4-5-1','3-4-2-1','3-4-1-2','3-4-3','3-5-2','3-1-4-2','5-2-1-2','5-2-3','5-3-2','5-4-1'];
+function normForm(s){
+  s=String(s||'').replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).trim(); if(!s) return '';
+  const m=s.match(/^(\d)[\s\-–.]*(\d)[\s\-–.]*(\d)(?:[\s\-–.]*(\d))?(?:[\s\-–.]*(\d))?\s*(\(\s*\d\s*\))?$/);
+  return m ? [m[1],m[2],m[3],m[4],m[5]].filter(Boolean).join('-')+(m[6]?' '+m[6].replace(/\s/g,''):'') : s;
+}
+function fillFormList(){
+  const used=[...new Set(matches.flatMap(m=>[normForm(m.formation),normForm(m.formation2),normForm(m.oppFormation)]).filter(Boolean))];
+  document.getElementById('formList').innerHTML=[...new Set([...used,...FORMATIONS])].map(x=>`<option value="${esc(x)}">`).join('');
+}
+function formAgg(f,key){ const M={}; f.forEach(m=>{ const k=normForm(m[key]); if(!k) return; (M[k]=M[k]||[]).push(m); });
+  return Object.entries(M).map(([k,l])=>({k,g:agg(l)})).sort((x,y)=>y.g.n-x.g.n); }
 
 function resetForm(){
   form={ mode:form.mode, decided:'FT', result:null, resultManual:false, editingId:null, files:[], existingPhotos:[], source:'manual', ocr:null, side:null };
   const now=new Date();
   document.getElementById('f-date').value=todayKey();
   document.getElementById('f-time').value=`${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-  ['f-opp','f-form','f-oform','f-note','f-penf','f-pena','f-div','f-rating','f-delta'].forEach(id=>document.getElementById(id).value='');
+  ['f-opp','f-form','f-form2','f-oform','f-note','f-penf','f-pena','f-div','f-rating','f-delta'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('oppHint').textContent='';
   document.getElementById('f-gf').value=0; document.getElementById('f-ga').value=0;
   document.querySelectorAll('#statTable input').forEach(i=>{ i.value=''; i.classList.remove('ocr','miss'); });
   document.getElementById('shotThumbs').innerHTML='';
   form.ext=null; renderExtForm();
+  form.goals={f:[],a:[]}; renderGoalTags();
+  if(!form.editingId){ const lf=matches.find(m=>m.formation); if(lf) document.getElementById('f-form').value=normForm(lf.formation); }
   document.getElementById('ocrStatus').classList.remove('show');
   document.getElementById('sideRow').style.display='none';
   document.getElementById('formTitle').textContent='➕ مباراة جديدة';
@@ -2042,7 +2178,7 @@ function readForm(){
   return {
     date:document.getElementById('f-date').value||todayKey(), time:document.getElementById('f-time').value||'',
     mode:form.mode, eventId:document.getElementById('f-event').value?Number(document.getElementById('f-event').value):'',
-    opponent:document.getElementById('f-opp').value.trim(), formation:document.getElementById('f-form').value.trim(), oppFormation:document.getElementById('f-oform').value.trim(),
+    opponent:document.getElementById('f-opp').value.trim(), formation:normForm(document.getElementById('f-form').value), formation2:(v=>v&&v!==normForm(document.getElementById('f-form').value)?v:'')(normForm(document.getElementById('f-form2').value)), oppFormation:normForm(document.getElementById('f-oform').value),
     gf, ga, decided:form.decided,
     penFor: form.decided==='PEN'?num(document.getElementById('f-penf').value):null,
     penAgainst: form.decided==='PEN'?num(document.getElementById('f-pena').value):null,
@@ -2051,6 +2187,7 @@ function readForm(){
     division: form.mode==='rivals' ? (document.getElementById('f-div').value||'') : '',
     ext: form.ext && Object.keys(form.ext).length ? JSON.parse(JSON.stringify(form.ext)) : null,
     fcp: form.mode==='ladder' ? readFp() : null,
+    goals: readGoalTags(gf,ga),
   };
 }
 
@@ -2082,6 +2219,12 @@ async function saveMatch(){
   const wasEdit=!!form.editingId;
   resetForm(); fillOppList(); renderMatchList(); renderHome();
   toast(wasEdit?'✏️ تم تعديل المباراة':'⚽ انحفظت المباراة!');
+  if(!wasEdit && settings.active){ const al=tiltAlert();
+    if(al && al.kind==='tilt'){
+      if(al.n===(+settings.tilt.losses||3)){ settings.active.tilts=(settings.active.tilts||0)+1; persistLocal(); cloudSaveSettings(); }
+      setTimeout(()=>toast(`🧊 ${al.n} خسارات ورا بعض — خذي وقفة ١٠ دقايق قبل الجاية`,5000),1700);
+      try{ navigator.vibrate&&navigator.vibrate([150,80,150]); }catch(e){}
+      tickTimer(); } }
 }
 
 function editMatch(id){
@@ -2089,9 +2232,10 @@ function editMatch(id){
   resetForm();
   form.editingId=id; form.existingPhotos=[...(m.photos||[])]; form.source=m.source||'manual';
   document.getElementById('f-date').value=m.date; document.getElementById('f-time').value=m.time||'';
-  document.getElementById('f-opp').value=m.opponent||''; document.getElementById('f-form').value=m.formation||''; document.getElementById('f-oform').value=m.oppFormation||'';
+  document.getElementById('f-opp').value=m.opponent||''; document.getElementById('f-form').value=m.formation||''; document.getElementById('f-form2').value=m.formation2||''; document.getElementById('f-oform').value=m.oppFormation||'';
   document.getElementById('f-note').value=m.note||'';
   document.getElementById('f-gf').value=m.gf; document.getElementById('f-ga').value=m.ga;
+  form.goals=m.goals?JSON.parse(JSON.stringify(m.goals)):{f:[],a:[]}; renderGoalTags();
   document.getElementById('f-div').value=m.division||'';
   form.ext = m.ext ? JSON.parse(JSON.stringify(m.ext)) : null; renderExtForm();
   document.getElementById('f-rating').value=m.fcp?.rating??''; document.getElementById('f-delta').value=m.fcp?.delta??'';
@@ -2186,7 +2330,7 @@ function applyOcr(){
     });
     if(seen){ total+=2; [[a,va],[b,vb]].forEach(([el,v])=>{ if(v==null){ el.classList.add('miss'); missing.push(STAT_UI[k].ar); } }); }
   });
-  if(r.score){ document.getElementById('f-gf').value=r.score[me]; document.getElementById('f-ga').value=r.score[op]; form.resultManual=false; autoResult(); }
+  if(r.score){ document.getElementById('f-gf').value=r.score[me]; document.getElementById('f-ga').value=r.score[op]; form.resultManual=false; autoResult(); renderGoalTags(); }
   const oppName = r.teams ? (r.teams[op]||'') : '';
   if(oppName && !document.getElementById('f-opp').value) document.getElementById('f-opp').value=oppName;
   if(!showAdv && STAT_KEYS.some(k=>!STAT_UI[k].core && (r.left[k]!=null||r.right[k]!=null))) toggleAdv();
@@ -2207,6 +2351,7 @@ function applyOcr(){
   ocrMsg(`✅ قريت <b class="num">${filled}</b> رقم${tabsTxt}${r.score?` + السكور <b class="num">${r.score[me]}–${r.score[op]}</b>`:''}. الخانات <span style="color:var(--green)">الخضراء</span> من الصورة${missing.length?`، و<span style="color:var(--gold)">الصفراء</span> ما انقرت (${[...new Set(missing)].slice(0,4).join('، ')})`:''} — راجعيها قبل الحفظ.${extN?`<br>📋 وكمان <b class="num">${extN}</b> إحصائية مفصّلة (افتحي "إحصائيات مفصّلة" تحت الجدول)`:''}${sideTxt}${ladTxt?'<br>'+ladTxt:''}`,1);
 }
 // FC Pro ladder result screen → mode, ladder, rating, change, result
+function setExtVal(k,side,v){ if(form.ext&&form.ext[k]) form.ext[k][side]=num(v); }
 function renderExtForm(){
   const box=document.getElementById('extBox'), ext=form.ext||{}, keys=Object.keys(ext);
   if(!keys.length){ box.style.display='none'; document.getElementById('extRows').innerHTML=''; return; }
@@ -2214,9 +2359,9 @@ function renderExtForm(){
   document.getElementById('extSummary').textContent=`📋 إحصائيات مفصّلة (${keys.length})`;
   const tabs=[...new Set(keys.map(extTab))];
   document.getElementById('extRows').innerHTML=tabs.map(t=>`<div class="ext-tab">${EXT_TABS[t]||t}</div>`+keys.filter(k=>extTab(k)===t).map(k=>{ const v=ext[k];
-    return `<div class="ext-row"><div><input type="number" inputmode="decimal" value="${v.me??''}" oninput="form.ext['${k.replace(/'/g,"\\'")}'].me=num(this.value)">${v.meG?`<div class="ext-g">⚽ ${v.meG}</div>`:''}</div>
+    return `<div class="ext-row"><div><input type="number" inputmode="decimal" value="${v.me??''}" oninput="setExtVal('${k.replace(/'/g,"\\'")}','me',this.value)">${v.meG?`<div class="ext-g">⚽ ${v.meG}</div>`:''}</div>
       <div class="lbl">${esc(extAr(k))}<span>${esc(extLabel(k))}</span></div>
-      <div><input type="number" inputmode="decimal" value="${v.op??''}" oninput="form.ext['${k.replace(/'/g,"\\'")}'].op=num(this.value)">${v.opG?`<div class="ext-g">⚽ ${v.opG}</div>`:''}</div></div>`; }).join('')).join('');
+      <div><input type="number" inputmode="decimal" value="${v.op??''}" oninput="setExtVal('${k.replace(/'/g,"\\'")}','op',this.value)">${v.opG?`<div class="ext-g">⚽ ${v.opG}</div>`:''}</div></div>`; }).join('')).join('');
 }
 function applyLadderShot(r){
   const L=r.ladder; if(L.rating==null && L.delta==null) return '';
@@ -2257,7 +2402,8 @@ function matchDetail(m){
   const fmt=k=>v=> v==null?'—': (k==='xg'||k==='recoveryTime')? f1(v) : f0(v)+(STAT_UI[k].ar.includes('%')?'%':'');
   return `<div style="display:grid;grid-template-columns:52px 1fr 52px;gap:6px;font-size:11px;font-weight:700;margin-bottom:6px;"><div style="text-align:center;color:var(--s-me)">${esc(settings.name)}</div><div></div><div style="text-align:center;color:var(--s-opp)">الخصم</div></div>
     ${keys.map(k=>cmpRow(STAT_UI[k].ar.replace(' %',''), m.me?.[k], m.opp?.[k], fmt(k))).join('') || '<div class="muted small">ما فيه إحصائيات مفصّلة</div>'}
-    ${m.formation||m.oppFormation?`<div class="small muted" style="margin-top:6px">التشكيلة: <span class="ltr">${esc(m.formation||'?')}</span> ضد <span class="ltr">${esc(m.oppFormation||'?')}</span></div>`:''}
+    ${m.formation||m.oppFormation?`<div class="small muted" style="margin-top:6px">التشكيلة: <span class="ltr">${esc(m.formation||'?')}</span>${m.formation2?` ثم حوّلت <span class="ltr">${esc(m.formation2)}</span>`:''} ضد <span class="ltr">${esc(m.oppFormation||'?')}</span></div>`:''}
+    ${goalTagsLine(m)}
     ${m.note?`<div class="small" style="margin-top:6px;color:var(--text2)">📝 ${esc(m.note)}</div>`:''}
     ${(m.photos||[]).length?`<div class="thumbs">${m.photos.map(u=>`<img src="${esc(u)}" onclick="event.stopPropagation();openImg('${esc(u)}')">`).join('')}</div>`:''}
     ${videos.filter(v=>v.matchId===m.id).map(v=>`<div class="small" style="margin-top:6px">🎬 <a style="color:var(--accent);cursor:pointer" onclick="openVideo(${v.id})">${esc(v.title||'فيديو')}</a> <span class="muted">(${vtypeOf(v.type).label})</span></div>`).join('')}
@@ -2362,6 +2508,7 @@ function renderStats(){
   renderCompare(f);
   renderDaily();
   renderExtStats(f);
+  renderGoalTypes(f); renderFormations(f); renderMental(f);
   renderFatigue(f);
   renderModeTable(f);
   renderOppTable(f);
@@ -2490,7 +2637,7 @@ function barChart(id,o){
 // ══════════════════════════════════════
 function matchDT(m){ const d=parseKey(m.date); if(m.time){ const [h,mi]=m.time.split(':').map(Number); d.setHours(h||0,mi||0,0,0); } else d.setHours(12,0,0,0); return d; }
 // The weekend window that started most recently at or before `at`
-function futWindowAt(at){
+function futBaseAt(at){
   const f=settings.fut;
   const [sh,sm]=(f.startTime||'22:00').split(':').map(Number), [eh,em]=(f.endTime||'10:00').split(':').map(Number);
   let s=new Date(at); s.setHours(sh,sm,0,0);
@@ -2500,27 +2647,61 @@ function futWindowAt(at){
   if(e<=s) e=addDays(e,7);
   return {start:s,end:e};
 }
+// apply the manual override (if any) for the weekend that starts at b.start
+function futApply(b){
+  const f=settings.fut, key=keyOf(b.start), o=(f.ov||{})[key];
+  const w={key, base:b, start:b.start, end:b.end, G:+f.games||15, T:+f.wins||0, skip:false, pre:!!(f.from && key<f.from), ov:!!o, mode:'finals', note:'', adjP:0, adjW:0};
+  if(o){
+    if(o.start) w.start=new Date(o.start); if(o.end) w.end=new Date(o.end);
+    if(!(w.end>w.start)){ w.start=b.start; w.end=b.end; }
+    w.mode=o.mode||'finals'; w.skip=w.mode==='skip'; if(!w.skip) w.pre=false;
+    if(+o.games>0) w.G=+o.games; if(o.wins!=null && o.wins!=='') w.T=+o.wins;
+    w.adjP=Math.max(0,+o.adjP||0); w.adjW=Math.min(Math.max(0,+o.adjW||0), w.adjP); w.note=o.note||'';
+  }
+  return w;
+}
+function futWindowAt(at){
+  const b=futBaseAt(at), w=futApply(b), n=futApply(futBaseAt(addDays(b.start,7)));
+  return (n.start<=at && at<n.end) ? n : w;
+}
+function futWhen(d){ return `${AR_DAYS[d.getDay()]} ${d.getDate()}/${d.getMonth()+1} · ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; }
+function dtLocal(d){ return `${keyOf(d)}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`; }
 function futMatchesIn(w){ return matches.filter(m=>m.mode==='champs' && matchDT(m)>=w.start && matchDT(m)<w.end); }
 function durTxt(ms){ ms=Math.max(0,ms); const d=Math.floor(ms/864e5), h=Math.floor(ms%864e5/36e5), m=Math.floor(ms%36e5/6e4);
   return d? `${d} يوم و ${h} ساعة` : h? `${h} ساعة و ${m} دقيقة` : `${m} دقيقة`; }
 function futState(){
-  const now=new Date(), w=futWindowAt(now), open=now<w.end;
-  const list=futMatchesIn(w), played=list.length, wins=list.filter(m=>resultOf(m)==='W').length;
-  const G=+settings.fut.games||15, T=+settings.fut.wins||0;
-  return {now,w,open,list,played,wins,losses:played-wins,G,T,left:Math.max(0,G-played),need:Math.max(0,T-wins),next:open?null:addDays(w.start,7)};
+  const now=new Date(), b=futBaseAt(now);
+  let w=futApply(b); const nw=futApply(futBaseAt(addDays(b.start,7)));
+  if(nw.start<=now && now<nw.end) w=nw;
+  const active=!w.skip && !w.pre, open=active && now>=w.start && now<w.end;
+  let nextW=null;
+  if(!open){
+    if(active && now<w.start) nextW=w;
+    else for(let i=1;i<=30;i++){ const c=futApply(futBaseAt(addDays(b.start,7*i))); if(!c.skip && !c.pre && c.end>now){ nextW=c; break; } }
+  }
+  const list=futMatchesIn(w), played=list.length+w.adjP, wins=list.filter(m=>resultOf(m)==='W').length+w.adjW;
+  const G=w.G, T=w.T;
+  return {now,w,open,active,list,played,wins,losses:played-wins,G,T,left:Math.max(0,G-played),need:Math.max(0,T-wins),nextW,next:nextW?nextW.start:null};
 }
 function renderFut(){
   const s=futState();
-  const status = s.open ? `<span class="status open">🟢 الويكند مفتوح — يسكّر بعد ${durTxt(s.w.end-s.now)}</span>`
-                        : `<span class="status closed">⏳ يفتح بعد ${durTxt(s.next-s.now)}</span>`;
+  const tag = (s.w.mode==='challengers'?' · Challengers':'') + (s.w.ov?' · ✏️ معدّل':'');
+  const nxt = s.next ? `يفتح ${futWhen(s.next)} — بعد ${durTxt(s.next-s.now)}${s.nextW.mode==='challengers'?' · Challengers':''}` : 'ما فيه ويكند جاي محدد';
+  let status;
+  if(s.open) status=`<span class="status open">🟢 الويكند مفتوح — يسكّر ${futWhen(s.w.end)} (بعد ${durTxt(s.w.end-s.now)})${tag}</span>`;
+  else if(s.w.pre && s.now<s.w.end) status=`<span class="status closed">⏳ الموسم لسا ما بدأ — أول ويكند ${nxt}</span>`;
+  else if(s.w.skip && s.now<s.w.end) status=`<span class="status closed">⏸ هالويكند ما فيه FUT Champions${s.w.note?' — '+esc(s.w.note):''}</span><div class="small muted" style="margin-top:6px">الجاي ${nxt}</div>`;
+  else status=`<span class="status closed">⏳ ${nxt}</span>`;
   let pace='';
   if(s.open && s.left>0){ const hrs=(s.w.end-s.now)/36e5;
     pace = s.need>s.left ? `<div class="ins bad">باقي <b class="num">${s.left}</b> مباراة وتحتاج <b class="num">${s.need}</b> فوز — الهدف ما عاد ممكن هالويكند. أقصى شي توصلين له <b class="num">${s.wins+s.left}</b> فوز.</div>`
          : `<div class="ins ${s.need?'warn':'good'}">باقي <b class="num">${s.left}</b> مباراة في <b class="num">${Math.round(hrs)}</b> ساعة ${s.need?`— تحتاجين <b class="num">${s.need}</b> فوز، يعني تقدرين تخسرين <b class="num">${s.left-s.need}</b> بس`:'— وصلتي هدف الانتصارات 🔥'}${hrs/ s.left < 3 ? ' · ⚠️ الوقت ضيق' : ''}</div>`; }
   else if(s.open && s.left===0) pace=`<div class="ins good">✅ خلّصتي الـ <b class="num">${s.G}</b> مباراة — <b class="num">${s.wins}</b> فوز.</div>`;
   // history of the last 8 weekends
-  const hist=[]; let w=s.open? futWindowAt(addDays(s.w.start,-1)) : s.w;
-  for(let i=0;i<8;i++){ const l=futMatchesIn(w); if(l.length) hist.push({w, n:l.length, win:l.filter(m=>resultOf(m)==='W').length}); w=futWindowAt(addDays(w.start,-1)); }
+  const hist=[]; const b0=futBaseAt(s.now);
+  for(let i=-1;i<10 && hist.length<8;i++){ const W=futApply(futBaseAt(addDays(b0.start,-7*i)));
+    if(W.skip || W.start>s.now || (s.open && W.key===s.w.key)) continue;
+    const l=futMatchesIn(W), n=l.length+W.adjP; if(n) hist.push({w:W, n, win:l.filter(m=>resultOf(m)==='W').length+W.adjW}); }
   const box=`${status}
     <div class="grid2" style="margin-top:12px">
       ${kpi(`${s.played}<small> / ${s.G}</small>`, s.open?'المباريات':'آخر ويكند', s.open?`باقي ${s.left}`:fmtDate(keyOf(s.w.start)), s.played/s.G*100, s.played>=s.G?'var(--green)':'var(--accent)')}
@@ -2528,8 +2709,53 @@ function renderFut(){
     </div>
     <div style="margin-top:10px">${pace}</div>
     ${hist.length?`<div class="small muted" style="margin:10px 0 6px">الويكندات السابقة</div><div class="wk-hist">${hist.map(h=>`<div><b>${h.win}</b>فوز من ${h.n}<br>${parseKey(keyOf(h.w.start)).getDate()}/${h.w.start.getMonth()+1}</div>`).join('')}</div>`:''}`;
-  document.getElementById('futBox').innerHTML=box;
+  document.getElementById('futBox').innerHTML=box+`<button class="btn block" style="margin-top:12px" onclick="editFutWeek()">✏️ تعديل الويكند يدوي</button>`;
+  if(document.getElementById('futEdit').style.display!=='none') fillFutEdit();
   return s;
+}
+// ── manual per-weekend editor
+let futEdKey=null;
+function futEdWeeks(){ const b=futBaseAt(new Date()); return [0,1,2].map(i=>futBaseAt(addDays(b.start,7*i))); }
+function editFutWeek(){
+  const s=futState();
+  futEdKey = s.open||(!s.active&&s.now<s.w.end) ? s.w.key : (s.nextW? s.nextW.key : futEdWeeks()[1] && keyOf(futEdWeeks()[1].start));
+  document.getElementById('futEdit').style.display='block'; fillFutEdit();
+  document.getElementById('futEdit').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function futEdBase(){ const ws=futEdWeeks(); return ws.find(b=>keyOf(b.start)===futEdKey) || ws[0]; }
+function fillFutEdit(){
+  const ws=futEdWeeks(); if(!ws.some(b=>keyOf(b.start)===futEdKey)) futEdKey=keyOf(ws[0].start);
+  document.getElementById('futEdWk').innerHTML=ws.map(b=>{ const k=keyOf(b.start), W=futApply(b);
+    return `<button class="${k===futEdKey?'active':''}" onclick="futEdKey='${k}';fillFutEdit()">${AR_DAYS[b.start.getDay()]} ${b.start.getDate()}/${b.start.getMonth()+1}${W.ov?' ✏️':''}</button>`; }).join('');
+  const b=futEdBase(), W=futApply(b), o=(settings.fut.ov||{})[futEdKey]||{};
+  document.getElementById('fe-mode').value=o.mode||'finals';
+  document.getElementById('fe-games').value=W.G; document.getElementById('fe-wins').value=W.T;
+  document.getElementById('fe-start').value=dtLocal(W.start); document.getElementById('fe-end').value=dtLocal(W.end);
+  document.getElementById('fe-adjP').value=o.adjP||''; document.getElementById('fe-adjW').value=o.adjW||'';
+  document.getElementById('fe-note').value=o.note||'';
+}
+function feModeChanged(){
+  const m=document.getElementById('fe-mode').value, g=document.getElementById('fe-games');
+  if(m==='challengers') g.value=5; else if(m==='finals' && +g.value===5) g.value=+settings.fut.games||15;
+}
+function saveFutWeek(){
+  if(!canWrite()) return;
+  const b=futEdBase(), v=id=>document.getElementById(id).value;
+  const st=v('fe-start'), en=v('fe-end');
+  if(st && en && !(new Date(en)>new Date(st))) return toast('⚠️ وقت السكّر لازم بعد وقت الفتح');
+  const o={mode:v('fe-mode'), games:+v('fe-games')||'', wins:v('fe-wins')===''?'':+v('fe-wins'),
+    start: st && st!==dtLocal(b.start) ? st : '', end: en && en!==dtLocal(b.end) ? en : '',
+    adjP:+v('fe-adjP')||0, adjW:+v('fe-adjW')||0, note:v('fe-note').trim()};
+  if(o.adjW>o.adjP) return toast('⚠️ الانتصارات أكثر من المباريات');
+  settings.fut.ov=Object.assign({}, settings.fut.ov||{}, {[futEdKey]:o});
+  persistLocal(); cloudSaveSettings(); renderAll(); document.getElementById('futEdit').style.display='none';
+  toast('✅ انحفظ تعديل الويكند');
+}
+function resetFutWeek(){
+  if(!canWrite()) return;
+  const ov=Object.assign({}, settings.fut.ov||{}); delete ov[futEdKey]; settings.fut.ov=ov;
+  persistLocal(); cloudSaveSettings(); renderAll(); document.getElementById('futEdit').style.display='none';
+  toast('↩︎ رجع الويكند للإعداد الافتراضي');
 }
 function currentDivision(){ const m=matches.find(x=>x.mode==='rivals' && x.division); return settings.rivals.current || (m?m.division:''); }
 function renderRivals(){
@@ -2586,7 +2812,7 @@ function renderHomeGoals(){
   const s=futState(), cur=currentDivision(), tgt=settings.rivals.target, L=ladderSorted(), last=L[L.length-1], lt=+settings.ladder.target||null;
   const steps=divIdx(cur)>=0&&divIdx(tgt)>=0?divIdx(tgt)-divIdx(cur):null;
   document.getElementById('homeGoals').innerHTML=`<div class="grid4">
-    ${kpi(`${s.played}<small> / ${s.G}</small>`, '🏆 FUT Champions', s.open?`${s.wins} فوز · يسكّر بعد ${durTxt(s.w.end-s.now)}`:`يفتح بعد ${durTxt(s.next-s.now)}`, s.played/s.G*100)}
+    ${kpi(`${s.played}<small> / ${s.G}</small>`, '🏆 FUT Champions', s.open?`${s.wins} فوز · يسكّر بعد ${durTxt(s.w.end-s.now)}`:s.next?`يفتح بعد ${durTxt(s.next-s.now)}`:'متوقف', s.played/s.G*100)}
     ${kpi(`${s.wins}${s.T?`<small> / ${s.T}</small>`:''}`, 'انتصارات الويكند', s.open&&s.need>s.left?'الهدف صعب هالمرة':s.need?`يحتاج ${s.need}`:'✅', s.T?s.wins/s.T*100:null, 'var(--gold)')}
     ${kpi(`<span style="font-size:22px">${divLabel(cur)}</span>`,'⚔️ Rivals', steps==null?'حددي الديفجن':steps<=0?'✅ الهدف تحقق':`الهدف ${divLabel(tgt)} · باقي ${steps}`)}
     ${(()=>{ const F=fpState(fpAutoLadder()); const L=F.L; return kpi(F.rating!=null?F.rating:'—','🎮 '+esc(L.short||L.name), F.cutoff? (F.rating!=null? (F.gap<=0?'✅ فوق حد التأهل':`باقي ${F.gap} نقطة للـ ${F.cutoff}`) : `الحد ${F.cutoff}`) : fpStatusTxt(L)); })()}
@@ -3058,6 +3284,25 @@ function renderHomeMyGoals(){
 const SESSION_TYPES=[{id:'fcpro',label:'FC Pro Ladder',icon:'🪜'},{id:'ranked',label:'FUT Champions',icon:'🏆'},{id:'rivals',label:'Rivals',icon:'⚔️'},{id:'training',label:'تدريب',icon:'🎯'},{id:'scrim',label:'سكريم',icon:'🤝'},{id:'official',label:'بطولة',icon:'🏟'}];
 const stypeOf=id=>SESSION_TYPES.find(t=>t.id===id)||SESSION_TYPES[0];
 let timerType='ranked';
+let preVals={mood:null,focus:null,energy:null};
+const PRE_KEYS=[['mood','المزاج 🙂'],['focus','التركيز 🎯'],['energy','الطاقة ⚡']];
+function sessionMatches(a){ return matchesInRange(new Date(a.start), new Date()).sort((x,y)=>matchDT(x)-matchDT(y)||x.id-y.id); }
+function lossStreak(ms){ let n=0; for(let i=ms.length-1;i>=0;i--){ if(resultOf(ms[i])==='L') n++; else break; } return n; }
+function tiltAlert(){
+  const a=settings.active; if(!a || a.pauseStart) return null;
+  const T=settings.tilt||{}, ms=sessionMatches(a), ls=lossStreak(ms);
+  if(ls>=(+T.losses||3)){ const lastT=matchDT(ms[ms.length-1]); if(!a.lastResume || new Date(a.lastResume)<lastT) return {kind:'tilt', n:ls}; }
+  const sb=(new Date()-new Date(a.lastResume||a.start))/6e4;
+  if((+T.breakMins||0)>0 && sb>=+T.breakMins) return {kind:'break', mins:sb};
+  return null;
+}
+function tiltHtml(){
+  const al=tiltAlert(); if(!al) return '';
+  const btn='<button class="btn" style="margin-top:6px" onclick="togglePause()">⏸ ابدأ الاستراحة</button>';
+  return al.kind==='tilt'
+    ? `<div class="ins bad" style="margin-top:10px">🧊 <b class="num">${al.n}</b> خسارات ورا بعض. وقفة ١٠ دقايق: قومي، اشربي موية، وارجعي بفكرة وحدة بسيطة للمباراة الجاية.<br>${btn}</div>`
+    : `<div class="ins warn" style="margin-top:10px">⏰ صار لك <b>${hrsTxt(al.mins)}</b> بدون استراحة — ٥ دقايق تريّح العين واليد وترجّع التركيز.<br>${btn}</div>`;
+}
 function hms(ms){ ms=Math.max(0,ms); const s=Math.floor(ms/1000); return `${pad2(Math.floor(s/3600))}:${pad2(Math.floor(s%3600/60))}:${pad2(s%60)}`; }
 function hm(mins){ mins=Math.round(mins||0); return `${Math.floor(mins/60)}:${pad2(mins%60)}<small> س</small>`; }
 function hrsTxt(mins){ const h=Math.floor(mins/60), m=Math.round(mins%60); return h? `${h}س ${m? m+'د':''}`.trim() : `${m}د`; }
@@ -3069,13 +3314,15 @@ function matchesInRange(start,end){ return matches.filter(m=>{ const t=matchDT(m
 
 function startSession(){
   if(settings.active) return;
-  settings.active={start:new Date().toISOString(), type:timerType, pausedMs:0, pauseStart:null};
+  const pre=Object.values(preVals).some(v=>v!=null)?{...preVals}:null;
+  settings.active={start:new Date().toISOString(), type:timerType, pausedMs:0, pauseStart:null, pre, breaks:0, tilts:0};
+  preVals={mood:null,focus:null,energy:null};
   persistLocal(); cloudSaveSettings(); renderTimer(); tickTimer(); toast('▶️ بدأت الجلسة — بالتوفيق!');
 }
 function togglePause(){
   const a=settings.active; if(!a) return;
-  if(a.pauseStart){ a.pausedMs=(a.pausedMs||0)+(new Date()-new Date(a.pauseStart)); a.pauseStart=null; toast('▶️ كمّلنا'); }
-  else { a.pauseStart=new Date().toISOString(); toast('⏸ استراحة'); }
+  if(a.pauseStart){ a.pausedMs=(a.pausedMs||0)+(new Date()-new Date(a.pauseStart)); a.pauseStart=null; a.lastResume=new Date().toISOString(); toast('▶️ كمّلنا'); }
+  else { a.pauseStart=new Date().toISOString(); a.breaks=(a.breaks||0)+1; toast('⏸ استراحة'); }
   persistLocal(); cloudSaveSettings(); renderTimer();
 }
 function stopSession(){
@@ -3085,6 +3332,7 @@ function stopSession(){
   if(mins>8*60){ const v=prompt(`الجلسة مسجّلة ${hrsTxt(mins)} — يمكن نسيتي توقفين التايمر؟\nاكتبي كم دقيقة لعبتي فعليًا:`, mins); if(v===null) return; mins=Math.max(0,Math.round(+v||0)); }
   if(mins<1){ if(!confirm('الجلسة أقل من دقيقة — تبين تلغينها؟')) return; settings.active=null; persistLocal(); cloudSaveSettings(); renderTimer(); tickTimer(); return; }
   const s={id:uid(), date:keyOf(new Date(a.start)), start:a.start, end:now.toISOString(), mins, type:a.type};
+  if(a.pre) s.pre=a.pre; if(a.tilts) s.tilts=a.tilts; if(a.breaks) s.breaks=a.breaks;
   sessions.push(s); settings.active=null;
   persistLocal(); cloudSaveSettings(); cloudUpsertItem('session',s);
   const ms=matchesInRange(new Date(s.start), now), w=ms.filter(m=>resultOf(m)==='W').length;
@@ -3105,12 +3353,15 @@ function renderTimer(){
   const box=document.getElementById('timerBox'); const a=settings.active;
   if(!a){
     box.innerHTML=`<div class="seg" style="justify-content:center;margin-bottom:10px">${SESSION_TYPES.map(t=>`<button class="${t.id===timerType?'active':''}" onclick="timerType='${t.id}';renderTimer()">${t.icon} ${t.label}</button>`).join('')}</div>
+      <div class="pre-check"><div class="small muted" style="margin-bottom:8px">قبل ما تبدين (اختياري) — من 1 لـ 5</div>
+        ${PRE_KEYS.map(([k,l])=>`<div class="pc-row"><span>${l}</span><div class="scale" id="pc-${k}">${[1,2,3,4,5].map(v=>`<button class="${preVals[k]===v?'active':''}" onclick="preVals.${k}=preVals.${k}===${v}?null:${v};renderTimer()">${v}</button>`).join('')}</div></div>`).join('')}</div>
       <button class="big-start" onclick="startSession()">▶️ ابدأ الجلسة</button>`;
   } else {
     const t=stypeOf(a.type), st=new Date(a.start);
-    box.innerHTML=`<div class="small muted" style="text-align:center">${t.icon} ${t.label} · بدأت <span class="num">${pad2(st.getHours())}:${pad2(st.getMinutes())}</span>${a.pauseStart?' · <b style="color:var(--gold)">استراحة</b>':''}</div>
+    box.innerHTML=`<div class="small muted" style="text-align:center">${t.icon} ${t.label} · بدأت <span class="num">${pad2(st.getHours())}:${pad2(st.getMinutes())}</span>${a.pre?` · 🙂${a.pre.mood??'—'} 🎯${a.pre.focus??'—'} ⚡${a.pre.energy??'—'}`:''}${a.pauseStart?' · <b style="color:var(--gold)">استراحة</b>':''}</div>
       <div class="timer-clock ${a.pauseStart?'paused':''}" id="timerClock">${hms(activeElapsed())}</div>
       <div class="small" style="text-align:center;color:var(--text2)" id="timerGames"></div>
+      <div id="tiltBox"></div>
       <div class="timer-btns"><button class="btn" onclick="togglePause()">${a.pauseStart?'▶️ كمّلي':'⏸ استراحة'}</button><button class="btn danger" onclick="stopSession()">⏹ إنهاء الجلسة</button></div>`;
   }
   // hours KPIs + today's sessions
@@ -3130,6 +3381,7 @@ function tickTimer(){
   const t=hms(activeElapsed());
   pill.classList.add('show'); pill.innerHTML=`${a.pauseStart?'⏸':'⏱'} <span class="num">${t}</span>`;
   const c=document.getElementById('timerClock'); if(c) c.textContent=t;
+  const tb=document.getElementById('tiltBox'); if(tb){ const h=tiltHtml(); if(tb.dataset.h!==h){ tb.innerHTML=h; tb.dataset.h=h; } }
   const g=document.getElementById('timerGames');
   if(g){ const ms=matchesInRange(new Date(a.start),new Date()), w=ms.filter(m=>resultOf(m)==='W').length; const h=activeElapsed()/36e5;
     const fp=ms.filter(m=>m.fcp&&m.fcp.delta!=null), fpd=sum(fp.map(m=>m.fcp.delta));
@@ -3166,6 +3418,80 @@ function renderExtStats(f){
   ins.innerHTML=out.join('');
 }
 
+function renderGoalTypes(f){
+  const g=goalTypeAgg(f), box=document.getElementById('goalTypeBox');
+  if(!g.tagged.f && !g.tagged.a && !goalTimeAgg(f).tf && !goalTimeAgg(f).ta){ box.innerHTML='<div class="chart-empty">لما تسجلين مباراة، حددي نوع كل هدف ودقيقته تحت السكور (L1، مرتدة، باور شوت…) — وهنا يطلع وين قوتها ووين تنضرب ومتى.</div>'; return; }
+  const top=s=>Object.entries(g.T[s]).sort((x,y)=>y[1]-x[1]);
+  const bars=(s,color)=>{ const tot=g.tagged[s]; if(!tot) return '<div class="muted small">ما فيه أهداف مصنّفة</div>';
+    return top(s).map(([k,n])=>`<div class="gt-bar"><span>${gtName(k)}</span><div class="gt-track"><div style="width:${n/tot*100}%;background:${color}"></div></div><b class="num">${n}</b><span class="muted num" style="min-width:34px;text-align:left">${Math.round(n/tot*100)}%</span></div>`).join(''); };
+  const ins=[], tA=top('a')[0], tF=top('f')[0];
+  if(tA && g.tagged.a>=4 && tA[1]/g.tagged.a>=0.3) ins.push(`<div class="ins bad"><b class="num">${Math.round(tA[1]/g.tagged.a*100)}%</b> من الأهداف اللي دخلت عليها جت من <b>${gtOf(tA[0]).l}</b> — هذي أول نقطة يشتغل عليها التدريب.</div>`);
+  if(tF && g.tagged.f>=4 && tF[1]/g.tagged.f>=0.3) ins.push(`<div class="ins good">سلاحها الأول: <b>${gtOf(tF[0]).l}</b> (<b class="num">${Math.round(tF[1]/g.tagged.f*100)}%</b> من أهدافها).</div>`);
+  const tg=g.tagged.f+g.tagged.a, tt=g.total.f+g.total.a;
+  const ko=g.T.a.kickoff||0, koF=g.T.f.kickoff||0;
+  if(ko>=2) ins.push(`<div class="ins bad">⏱ دخل عليها <b class="num">${ko}</b> ${ko>10?'هدف':'أهداف'} من قلتش السنترة — بعد ما تسجل وبداية الشوط لو الكرة مع الخصم. تمرين دفاع السنترة يستاهل وقت ثابت بالتدريب.</div>`);
+  if(koF>=2) ins.push(`<div class="ins good">⏱ سجّلت <b class="num">${koF}</b> ${koF>10?'هدف':'أهداف'} من قلتش السنترة.</div>`);
+  const tm=goalTimeAgg(f);
+  let timing='';
+  if(tm.tf+tm.ta){
+    if(tm.ta>=4 && tm.lateA/tm.ta>=0.35) ins.push(`<div class="ins bad"><b class="num">${Math.round(tm.lateA/tm.ta*100)}%</b> من الأهداف عليها جت بآخر ربع ساعة أو بعدها — إدارة نهاية المباراة والتركيز فيها تحتاج شغل.</div>`);
+    if(tm.quick>=2) ins.push(`<div class="ins warn">دخل عليها هدف خلال ٥ دقايق بعد ما سجّلت <b class="num">${tm.quick}</b> ${tm.quick>10?'مرة':'مرات'} — أول دقايق بعد الهدف تحتاج هدوء وتأمين.</div>`);
+    if(tm.quickOpp>=2) ins.push(`<div class="ins good">ردّت بهدف خلال ٥ دقايق بعد ما دخل عليها <b class="num">${tm.quickOpp}</b> ${tm.quickOpp>10?'مرة':'مرات'} 💪</div>`);
+    if(tm.tf>=4 && tm.lateF/tm.tf>=0.35) ins.push(`<div class="ins good"><b class="num">${Math.round(tm.lateF/tm.tf*100)}%</b> من أهدافها بآخر ربع ساعة — تحسم متأخر.</div>`);
+    const mx=Math.max(1,...tm.B.map(b=>Math.max(b.f,b.a)));
+    timing=`<div class="small" style="font-weight:700;margin:14px 0 6px">⏱ توقيت الأهداف <span class="muted" style="font-weight:400">(${tm.tf+tm.ta} هدف بدقيقته)</span></div>
+      <table class="tbl"><thead><tr><th>الدقيقة</th><th>لها</th><th>عليها</th></tr></thead><tbody>${GT_BUCKETS.map((b,i)=>`<tr><td class="num">${b.l}</td>
+        <td><div class="gt-bar" style="margin:0"><div class="gt-track"><div style="width:${tm.B[i].f/mx*100}%;background:var(--green)"></div></div><b class="num">${tm.B[i].f||''}</b></div></td>
+        <td><div class="gt-bar" style="margin:0"><div class="gt-track"><div style="width:${tm.B[i].a/mx*100}%;background:#ff5c7a"></div></div><b class="num">${tm.B[i].a||''}</b></div></td></tr>`).join('')}</tbody></table>`;
+  }
+  box.innerHTML=ins.join('')+`<div class="gt-cols"><div><div class="small" style="font-weight:700;color:var(--green);margin-bottom:6px">⚽ أهدافها (${g.tagged.f})</div>${bars('f','var(--green)')}</div><div><div class="small" style="font-weight:700;color:#ff5c7a;margin-bottom:6px">🥅 عليها (${g.tagged.a})</div>${bars('a','#ff5c7a')}</div></div>
+    <div class="small muted" style="margin-top:8px">مصنّف ${tg} من ${tt} هدف${tt&&tg/tt<0.7?' — كل ما صنّفتي أكثر كل ما صارت القراءة أدق':''}</div>${timing}`;
+}
+function renderFormations(f){
+  const mine=formAgg(f,'formation'), opp=formAgg(f,'oppFormation'), box=document.getElementById('formationBox');
+  if(!mine.length && !opp.length){ box.innerHTML='<div class="chart-empty">سجّلي تشكيلة البداية، واللي حوّلت لها إذا غيّرتي، وتشكيلة الخصم في كل مباراة (تحت الإحصائيات) — ويطلع هنا أنجح تشكيلة، وهل التحويل يفيد، وضد أي تشكيلة تتعب.</div>'; return; }
+  const tbl=(rows,title)=>rows.length?`<table class="tbl" style="margin-bottom:10px"><thead><tr><th>${title}</th><th>م</th><th>فوز</th><th>أهداف</th></tr></thead><tbody>${rows.slice(0,8).map(r=>`<tr><td><span class="ltr">${esc(r.k)}</span></td><td class="n">${r.g.n}</td><td class="n">${pct(r.g.win)}</td><td class="n">${f1(r.g.gf)}:${f1(r.g.ga)}</td></tr>`).join('')}</tbody></table>`:'';
+  const ins=[], good=mine.filter(r=>r.g.n>=4).sort((x,y)=>y.g.win-x.g.win);
+  if(good.length>=2 && good[0].g.win-good[good.length-1].g.win>=15) ins.push(`<div class="ins good">أنجح تشكيلة لها <b class="ltr">${esc(good[0].k)}</b> (فوز <b class="num">${Math.round(good[0].g.win)}%</b>) مقابل <b class="num">${Math.round(good[good.length-1].g.win)}%</b> بـ <b class="ltr">${esc(good[good.length-1].k)}</b>.</div>`);
+  const hard=opp.filter(r=>r.g.n>=3).sort((x,y)=>x.g.win-y.g.win)[0];
+  if(hard && hard.g.win<45) ins.push(`<div class="ins bad">تتعب ضد <b class="ltr">${esc(hard.k)}</b> — فوز <b class="num">${Math.round(hard.g.win)}%</b> من ${hard.g.n} مباريات. تستاهل خطة خاصة أو تمرين عليها.</div>`);
+  // switching formation mid-match
+  const withF=f.filter(m=>normForm(m.formation)), sw=withF.filter(m=>normForm(m.formation2)), st=withF.filter(m=>!normForm(m.formation2));
+  let swHtml='';
+  if(sw.length){
+    const gs=agg(sw), gn=agg(st), P={};
+    sw.forEach(m=>{ const k=`${normForm(m.formation)} ← ${normForm(m.formation2)}`; (P[k]=P[k]||[]).push(m); });
+    const pr=Object.entries(P).map(([k,l])=>({k,g:agg(l)})).sort((x,y)=>y.g.n-x.g.n);
+    if(sw.length>=3 && st.length>=3) ins.push(`<div class="ins ${gs.win>=gn.win?'good':'warn'}">لما تحوّل التشكيلة بالمباراة تفوز <b class="num">${Math.round(gs.win)}%</b> (${gs.n} مباراة)، ولما تكمل بنفسها <b class="num">${Math.round(gn.win)}%</b> (${gn.n}). <span class="muted">التحويل غالبًا يصير لما المباراة صعبة، فالمقارنة تقريبية.</span></div>`);
+    const after=formAgg(sw,'formation2');
+    swHtml=`<table class="tbl" style="margin-bottom:10px"><thead><tr><th>التحويل (من ← إلى)</th><th>م</th><th>فوز</th><th>أهداف</th></tr></thead><tbody>${pr.slice(0,8).map(r=>`<tr><td><span class="ltr">${esc(r.k.split(' ← ')[0])}</span> ← <span class="ltr">${esc(r.k.split(' ← ')[1])}</span></td><td class="n">${r.g.n}</td><td class="n">${pct(r.g.win)}</td><td class="n">${f1(r.g.gf)}:${f1(r.g.ga)}</td></tr>`).join('')}</tbody></table>`+
+      (after.length>1?tbl(after,'التشكيلة بعد التحويل'):'');
+  }
+  box.innerHTML=ins.join('')+tbl(mine,'تشكيلة البداية')+swHtml+tbl(opp,'تشكيلة الخصم');
+}
+function renderMental(f){
+  const box=document.getElementById('mentalBox'), T=+settings.tilt.losses||3;
+  const chrono=[...f].sort((x,y)=>matchDT(x)-matchDT(y)||x.id-y.id);
+  const aw={n:0,w:0}, al={n:0,w:0}, brk={n:0,w:0}, nob={n:0,w:0};
+  for(let i=1;i<chrono.length;i++){ const m=chrono[i], p=chrono[i-1]; if(m.date!==p.date) continue; const win=resultOf(m)==='W';
+    const b=resultOf(p)==='W'?aw:resultOf(p)==='L'?al:null; if(b){ b.n++; if(win) b.w++; }
+    if(i>=T && chrono.slice(i-T,i).every(x=>x.date===m.date && resultOf(x)==='L')){ const g=(matchDT(m)-matchDT(p))/6e4>=15?brk:nob; g.n++; if(win) g.w++; } }
+  const S=sessions.filter(s=>s.pre).map(s=>({s, ms:f.filter(m=>{ const t=matchDT(m); return t>=new Date(s.start)&&t<=new Date(s.end); })})).filter(x=>x.ms.length);
+  const tilts=sum(sessions.map(s=>s.tilts||0));
+  if(aw.n+al.n<4 && !S.length){ box.innerHTML='<div class="chart-empty">سجّلي المزاج والتركيز قبل كل جلسة في التايمر، وسجّلي المباريات بوقتها — ويطلع هنا أثر الحالة الذهنية والخسارات المتتالية على النتايج.</div>'; return; }
+  const ins=[], P=o=>Math.round(o.w/o.n*100);
+  if(al.n>=4 && aw.n>=4){ const x=P(al), y=P(aw);
+    ins.push(`<div class="ins ${y-x>=15?'bad':'good'}">بعد الخسارة تفوز <b class="num">${x}%</b> من المباراة اللي بعدها، وبعد الفوز <b class="num">${y}%</b>${y-x>=15?' — الخسارة تأثر على اللي بعدها، وهنا تفيد الوقفة القصيرة وروتين إعادة الضبط.':' — ما فيه أثر واضح للخسارة على المباراة اللي بعدها 👍'}</div>`); }
+  const sn=brk.n+nob.n;
+  if(sn>=2) ins.push(`<div class="ins warn">بعد <b class="num">${T}</b> خسارات ورا بعض فازت <b class="num">${Math.round((brk.w+nob.w)/sn*100)}%</b> من المباراة اللي بعدها (${sn} مرة)${brk.n>=2&&nob.n>=2?` · مع وقفة 15 دقيقة أو أكثر <b class="num">${P(brk)}%</b> وبدون وقفة <b class="num">${P(nob)}%</b>`:''}.</div>`);
+  const bk=v=>v==null?null:v<=2?'low':v===3?'mid':'high', lbl={high:'4–5 عالي',mid:'3 متوسط',low:'1–2 منخفض'};
+  const tbl=(key,title)=>{ const B={low:{s:0,n:0,w:0},mid:{s:0,n:0,w:0},high:{s:0,n:0,w:0}};
+    S.forEach(({s,ms})=>{ const k=bk(s.pre[key]); if(!k) return; B[k].s++; B[k].n+=ms.length; B[k].w+=ms.filter(m=>resultOf(m)==='W').length; });
+    const r=['high','mid','low'].filter(k=>B[k].s).map(k=>`<tr><td>${lbl[k]}</td><td class="n">${B[k].s}</td><td class="n">${B[k].n}</td><td class="n">${pct(B[k].w/B[k].n*100)}</td></tr>`).join('');
+    return r?`<table class="tbl" style="margin-bottom:10px"><thead><tr><th>${title}</th><th>جلسات</th><th>م</th><th>فوز</th></tr></thead><tbody>${r}</tbody></table>`:''; };
+  box.innerHTML=ins.join('')+tbl('focus','التركيز قبل الجلسة')+tbl('mood','المزاج قبل الجلسة')+tbl('energy','الطاقة قبل الجلسة')+
+    `<div class="small muted">${S.length} جلسة فيها تقييم قبلها${tilts?` · 🧊 تنبيهات تلت: ${tilts}`:''}</div>`;
+}
 // Win-rate by hour inside a session (fatigue curve)
 function renderFatigue(f){
   const buckets=[0,1,2,3].map(()=>({n:0,w:0,xg:[]}));
@@ -3276,9 +3602,11 @@ function renderSettingsForm(){
   document.getElementById('set-futGames').value=f.games; document.getElementById('set-futWins').value=f.wins;
   document.getElementById('set-futStartDow').value=f.startDow; document.getElementById('set-futStartTime').value=f.startTime;
   document.getElementById('set-futEndDow').value=f.endDow; document.getElementById('set-futEndTime').value=f.endTime;
+  document.getElementById('set-futFrom').value=f.from||'';
   document.getElementById('set-rivCur').value=settings.rivals.current||''; document.getElementById('set-rivTarget').value=settings.rivals.target||'1';
   document.getElementById('set-ladName').value=settings.ladder.name||''; document.getElementById('set-ladTarget').value=settings.ladder.target||'';
   document.getElementById('set-sleepTarget').value=settings.sleepTarget;
+  document.getElementById('set-tiltL').value=settings.tilt.losses; document.getElementById('set-tiltM').value=settings.tilt.breakMins;
 }
 function saveSettingsFromForm(){
   settings.seasonStart=document.getElementById('set-seasonStart').value||'';
@@ -3291,10 +3619,13 @@ function saveSettingsFromForm(){
   settings.side=document.getElementById('set-side').value;
   settings.fut={games:+document.getElementById('set-futGames').value||15, wins:+document.getElementById('set-futWins').value||0,
     startDow:+document.getElementById('set-futStartDow').value, startTime:document.getElementById('set-futStartTime').value||'22:00',
-    endDow:+document.getElementById('set-futEndDow').value, endTime:document.getElementById('set-futEndTime').value||'10:00'};
+    endDow:+document.getElementById('set-futEndDow').value, endTime:document.getElementById('set-futEndTime').value||'10:00',
+    from:document.getElementById('set-futFrom').value||'', ov:settings.fut.ov||{}};
   settings.rivals={current:document.getElementById('set-rivCur').value, target:document.getElementById('set-rivTarget').value||'1'};
   settings.ladder={name:document.getElementById('set-ladName').value.trim()||'اللادر', target:document.getElementById('set-ladTarget').value};
   settings.sleepTarget=+document.getElementById('set-sleepTarget').value||8;
+  const tl=+document.getElementById('set-tiltL').value, tm=document.getElementById('set-tiltM').value;
+  settings.tilt={losses:tl>=2?Math.round(tl):3, breakMins:tm===''?90:Math.max(0,Math.round(+tm||0))};
   persistLocal(); cloudSaveSettings(); renderHeader(); buildStatTable(); renderAll(); toast('✅ انحفظت الإعدادات');
 }
 function renderEvents(){
@@ -3326,9 +3657,9 @@ function deleteEvent(id){ if(!confirm('تحذفين البطولة؟')) return; 
 // ══════════════════════════════════════
 function download(name, text, type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
 function exportCSV(){
-  const head=['date','time','mode','division','event','opponent','goals_for','goals_against','decided','pen_for','pen_against','result',...STAT_KEYS.map(k=>'me_'+k),...STAT_KEYS.map(k=>'opp_'+k),'formation','opp_formation','note'];
+  const head=['date','time','mode','division','event','opponent','goals_for','goals_against','decided','pen_for','pen_against','result',...STAT_KEYS.map(k=>'me_'+k),...STAT_KEYS.map(k=>'opp_'+k),'formation','formation2','opp_formation','note'];
   const q=v=>{ const s=v==null?'':String(v); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
-  const rows=matches.map(m=>[m.date,m.time,m.mode,m.division||'',(events.find(e=>e.id===m.eventId)||{}).name||'',m.opponent,m.gf,m.ga,m.decided,m.penFor,m.penAgainst,resultOf(m),...STAT_KEYS.map(k=>m.me?.[k]),...STAT_KEYS.map(k=>m.opp?.[k]),m.formation,m.oppFormation,m.note].map(q).join(','));
+  const rows=matches.map(m=>[m.date,m.time,m.mode,m.division||'',(events.find(e=>e.id===m.eventId)||{}).name||'',m.opponent,m.gf,m.ga,m.decided,m.penFor,m.penAgainst,resultOf(m),...STAT_KEYS.map(k=>m.me?.[k]),...STAT_KEYS.map(k=>m.opp?.[k]),m.formation,m.formation2,m.oppFormation,m.note].map(q).join(','));
   download(`${PLAYER}_${APP.season}_matches.csv`, '﻿'+[head.join(','),...rows].join('\n'), 'text/csv;charset=utf-8');
 }
 function exportJSON(){ settings.lastBackup=new Date().toISOString(); persistLocal(); cloudSaveSettings(); setTimeout(renderBackupNudge,50); download(`${PLAYER}_${APP.season}_backup.json`, JSON.stringify({player:PLAYER,season:APP.season,settings,events,matches,ladder,videos,sessions,daily,goalsets,streams,slots},null,1), 'application/json'); }
@@ -3695,8 +4026,24 @@ ${modes.join('\n')}`);
   const ek=[...new Set(f.flatMap(m=>m.ext?Object.keys(m.ext):[]))].filter(k=>extTab(k)!=='summary');
   if(ek.length){ L.push('## الإحصائيات المفصّلة (متوسط المباراة: لها / الخصوم' + ' — وللتسديد: أهداف/تسديدات)');
     L.push(ek.map(k=>{ const g=extAgg(f,k); return `- ${EXT_TABS[extTab(k)]||extTab(k)} · ${extAr(k)}: ${n1(g.me)} / ${n1(g.op)}${g.meG||g.opG?` · أهداف ${g.meG}/${g.meS}`:''}`; }).join('\n')); }
+  // goal types + formations
+  const gA=goalTypeAgg(f);
+  if(gA.tagged.f||gA.tagged.a){ const ln=s=>Object.entries(gA.T[s]).sort((x,y)=>y[1]-x[1]).map(([k,n])=>`${(gtOf(k)||{}).l||k} ${n}`).join('، ')||'—';
+    L.push(`## كيف جت الأهداف (مصنّفة يدويًا — ${gA.tagged.f+gA.tagged.a} من ${gA.total.f+gA.total.a})
+- أهدافها: ${ln('f')}
+- الأهداف عليها: ${ln('a')}`); }
+  const tmA=goalTimeAgg(f);
+  if(tmA.tf+tmA.ta) L.push(`## توقيت الأهداف (لها / عليها)
+${GT_BUCKETS.map((b,i)=>`- ${b.l}: ${tmA.B[i].f} / ${tmA.B[i].a}`).join('\n')}
+- دخل عليها هدف خلال 5 دقايق بعد ما سجّلت: ${tmA.quick} مرة · ردّت خلال 5 دقايق بعد ما دخل عليها: ${tmA.quickOpp} مرة`);
+  const fmA=formAgg(f,'formation'), foA=formAgg(f,'oppFormation'), fl=rows=>rows.map(r=>`${r.k} (${r.g.n} م، فوز ${Math.round(r.g.win||0)}%، أهداف ${n1(r.g.gf)}/${n1(r.g.ga)})`).join('، ')||'—';
+  const swA=f.filter(m=>normForm(m.formation2)), stA=f.filter(m=>normForm(m.formation)&&!normForm(m.formation2));
+  if(fmA.length||foA.length) L.push(`## التشكيلات
+- تشكيلة البداية: ${fl(fmA)}
+- حوّلت التشكيلة أثناء المباراة في ${swA.length} مباراة (فوز ${swA.length?Math.round(agg(swA).win||0):0}%) · بدون تحويل ${stA.length} (فوز ${stA.length?Math.round(agg(stA).win||0):0}%)${swA.length?' · التحويلات: '+swA.slice(0,15).map(m=>`${normForm(m.formation)}→${normForm(m.formation2)} ${resultOf(m)}`).join('، '):''}
+- تشكيلات الخصوم: ${fl(foA)}`);
   // matches
-  const ml=[...f].slice(0,25).map(m=>{ const e=m.me||{},o=m.opp||{}; return `- ${m.date} ${m.time||''} · ${modeOf(m.mode).label} · ضد ${m.opponent||'؟'} · ${m.gf}-${m.ga}${m.decided==='PEN'?' (ترجيح)':m.decided==='ET'?' (إضافي)':''} ${resultOf(m)} · xG ${n1(e.xg)}-${n1(o.xg)} · استحواذ ${n1(e.possession)} · تسديد ${e.shotsOnTarget??'?'}/${e.shots??'?'} · تمرير ${n1(e.passAcc)}%${m.fcp?.delta!=null?` · FC Pro ${m.fcp.delta>0?'+':''}${m.fcp.delta} (${m.fcp.rating})`:''}${m.formation?` · ${m.formation} ضد ${m.oppFormation||'?'}`:''}${m.note?` · ملاحظة: ${m.note}`:''}`; });
+  const ml=[...f].slice(0,25).map(m=>{ const e=m.me||{},o=m.opp||{}; return `- ${m.date} ${m.time||''} · ${modeOf(m.mode).label} · ضد ${m.opponent||'؟'} · ${m.gf}-${m.ga}${m.decided==='PEN'?' (ترجيح)':m.decided==='ET'?' (إضافي)':''} ${resultOf(m)} · xG ${n1(e.xg)}-${n1(o.xg)} · استحواذ ${n1(e.possession)} · تسديد ${e.shotsOnTarget??'?'}/${e.shots??'?'} · تمرير ${n1(e.passAcc)}%${m.fcp?.delta!=null?` · FC Pro ${m.fcp.delta>0?'+':''}${m.fcp.delta} (${m.fcp.rating})`:''}${m.formation?` · ${m.formation}${m.formation2?`→${m.formation2}`:''} ضد ${m.oppFormation||'?'}`:''}${m.goals?(()=>{ const d=(t,mn)=>(t||[]).map((x,i)=>((gtOf(x)||{}).l||'؟')+((mn||[])[i]!=null?` ${mn[i]}'`:'')).join('+')||'—'; return ` · أهدافها: ${d(m.goals.f,m.goals.fm)} / عليها: ${d(m.goals.a,m.goals.am)}`; })():''}${m.note?` · ملاحظة: ${m.note}`:''}`; });
   if(ml.length) L.push(`## المباريات (الأحدث أول)
 ${ml.join('\n')}`);
   // goals
@@ -3716,6 +4063,9 @@ ${D.map(d=>{ const ms=matches.filter(m=>m.date===d.date); const w=ms.filter(m=>r
     f.forEach(m=>{ const t=matchDT(m); const s=ss.find(x=>t>=x.s&&t<=x.e); if(!s) return; const b=fb[Math.min(3,Math.floor((t-s.s)/36e5))]; b.n++; if(resultOf(m)==='W') b.w++; });
     L.push(`## جلسات اللعب
 ${S.length} جلسة · ${n1(sum(S.map(s=>s.mins))/60)} ساعة · نسبة الفوز حسب ساعة الجلسة: ${fb.map((b,i)=>`س${i+1}${i===3?'+':''} ${b.n?Math.round(b.w/b.n*100)+'% ('+b.n+')':'—'}`).join(' · ')}`); }
+  const SP=S.filter(s=>s.pre);
+  if(SP.length) L.push(`## الحالة قبل الجلسات (1-5) — تسجلها اللاعبة قبل ما تبدأ
+${SP.map(s=>{ const ms=matchesInRange(new Date(s.start),new Date(s.end)); return `- ${s.date}: مزاج ${s.pre.mood??'—'} · تركيز ${s.pre.focus??'—'} · طاقة ${s.pre.energy??'—'} → ${ms.length} مباراة، فوز ${ms.filter(m=>resultOf(m)==='W').length}${s.tilts?` · تنبيه تلت ${s.tilts}`:''}${s.breaks?` · استراحات ${s.breaks}`:''}`; }).join('\n')}`);
   // streams
   const ST=streams.filter(s=>s.date>=R0.from&&s.date<=R0.to);
   if(ST.length) L.push(`## البثوث (Twitch)
@@ -3782,6 +4132,7 @@ function init(){
   document.querySelectorAll('#periodSeg button').forEach(b=>b.addEventListener('click',()=>{ period=b.dataset.v; renderStats(); }));
   document.querySelectorAll('#resultSeg button').forEach(b=>b.addEventListener('click',()=>{ form.resultManual=true; setResultBtn(b.dataset.v); }));
   ['f-gf','f-ga','f-penf','f-pena'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{ form.resultManual=false; autoResult(); }));
+  ['f-gf','f-ga'].forEach(id=>document.getElementById(id).addEventListener('input',renderGoalTags));
   document.getElementById('f-date').addEventListener('change',()=>{ if(!form.editingId) fillEventSelect(); updateFutHint(); });
   document.getElementById('f-time').addEventListener('change',updateFutHint);
   document.getElementById('f-opp').addEventListener('input',updateOppHint);
