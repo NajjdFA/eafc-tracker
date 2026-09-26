@@ -2369,7 +2369,9 @@ function applyLadderShot(r){
   const nm=(L.name||'').toLowerCase(); const cup=nm.match(/cup\s*(\d)/);
   const id = cup ? (fpLadders().find(l=>new RegExp('cup\\s*'+cup[1],'i').test(l.name))||{}).id : /open\s*ladder/.test(nm) ? (fpLadders().find(l=>/open\s*ladder/i.test(l.name))||{}).id : null;
   if(id) document.getElementById('f-fpl').value=id;
-  if(L.rating!=null){ const el=document.getElementById('f-rating'); el.value=L.rating; el.classList.add('ocr'); }
+  // the big number on the result screen is the rating BEFORE this match; the +/− next to it is this match's change
+  const after = L.rating!=null ? L.rating + (L.delta||0) : null;
+  if(after!=null){ const el=document.getElementById('f-rating'); el.value=after; el.classList.add('ocr'); }
   if(L.delta!=null){ const el=document.getElementById('f-delta'); el.value=L.delta; el.classList.add('ocr'); }
   if(L.result){
     // the ladder screen is the final word: a level score with a win/loss means it went to penalties
@@ -2379,7 +2381,7 @@ function applyLadderShot(r){
   }
   updateFpHint();
   const rt={W:'فوز',L:'خسارة',D:'تعادل'}[L.result]||'';
-  return `🪜 <b>${esc(L.name||'FC Pro')}</b>: النقاط <b class="num">${L.rating??'—'}</b>${L.delta!=null?` (<b class="num" style="color:${L.delta>=0?'var(--green)':'#ff5c7a'}">${L.delta>0?'+':''}${L.delta}</b>)`:''}${rt?` · ${rt}`:''}`;
+  return `🪜 <b>${esc(L.name||'FC Pro')}</b>: النقاط <b class="num">${L.rating??'—'}</b>${L.delta!=null?` <b class="num" style="color:${L.delta>=0?'var(--green)':'#ff5c7a'}">${L.delta>0?'+':''}${L.delta}</b> ← صارت <b class="num">${after}</b>`:''}${rt?` · ${rt}`:''}`;
 }
 
 // ══════════════════════════════════════
@@ -2857,7 +2859,7 @@ function readFp(){
   const id=document.getElementById('f-fpl').value; if(!id) return null;
   let rating=num(document.getElementById('f-rating').value), delta=num(document.getElementById('f-delta').value);
   const prev=fpRatingBefore(id, formDT(), form.editingId);
-  if(rating!=null && prev!=null) delta=rating-prev;
+  if(rating!=null && prev!=null && delta==null) delta=rating-prev;
   else if(rating==null && delta!=null && prev!=null) rating=prev+delta;
   return {ladder:id, rating:rating!=null?Math.round(rating):null, delta:delta!=null?Math.round(delta):null};
 }
@@ -3281,9 +3283,9 @@ function renderHomeMyGoals(){
 // ══════════════════════════════════════
 // PLAY-SESSION TIMER
 // ══════════════════════════════════════
-const SESSION_TYPES=[{id:'fcpro',label:'FC Pro Ladder',icon:'🪜'},{id:'ranked',label:'FUT Champions',icon:'🏆'},{id:'rivals',label:'Rivals',icon:'⚔️'},{id:'training',label:'تدريب',icon:'🎯'},{id:'scrim',label:'سكريم',icon:'🤝'},{id:'official',label:'بطولة',icon:'🏟'}];
+const SESSION_TYPES=[{id:'mixed',label:'منوّعة',icon:'🎮'},{id:'fcpro',label:'FC Pro Ladder',icon:'🪜'},{id:'ranked',label:'FUT Champions',icon:'🏆'},{id:'rivals',label:'Rivals',icon:'⚔️'},{id:'training',label:'تدريب',icon:'🎯'},{id:'scrim',label:'سكريم',icon:'🤝'},{id:'official',label:'بطولة',icon:'🏟'}];
 const stypeOf=id=>SESSION_TYPES.find(t=>t.id===id)||SESSION_TYPES[0];
-let timerType='ranked';
+let timerType='mixed';
 let preVals={mood:null,focus:null,energy:null};
 const PRE_KEYS=[['mood','المزاج 🙂'],['focus','التركيز 🎯'],['energy','الطاقة ⚡']];
 function sessionMatches(a){ return matchesInRange(new Date(a.start), new Date()).sort((x,y)=>matchDT(x)-matchDT(y)||x.id-y.id); }
@@ -3353,6 +3355,7 @@ function renderTimer(){
   const box=document.getElementById('timerBox'); const a=settings.active;
   if(!a){
     box.innerHTML=`<div class="seg" style="justify-content:center;margin-bottom:10px">${SESSION_TYPES.map(t=>`<button class="${t.id===timerType?'active':''}" onclick="timerType='${t.id}';renderTimer()">${t.icon} ${t.label}</button>`).join('')}</div>
+      <div class="small muted" style="text-align:center;margin:-4px 0 10px">${timerType==='mixed'?'تنوّعين؟ خليها "منوّعة" — كل مباراة تنحسب بنوعها لحالها':'النوع بس للتصنيف — المباريات تنحسب بنوعها'}</div>
       <div class="pre-check"><div class="small muted" style="margin-bottom:8px">قبل ما تبدين (اختياري) — من 1 لـ 5</div>
         ${PRE_KEYS.map(([k,l])=>`<div class="pc-row"><span>${l}</span><div class="scale" id="pc-${k}">${[1,2,3,4,5].map(v=>`<button class="${preVals[k]===v?'active':''}" onclick="preVals.${k}=preVals.${k}===${v}?null:${v};renderTimer()">${v}</button>`).join('')}</div></div>`).join('')}</div>
       <button class="big-start" onclick="startSession()">▶️ ابدأ الجلسة</button>`;
@@ -3372,7 +3375,8 @@ function renderTimer(){
     kpi(hm(wm),'لعب هالأسبوع', wT?`الهدف ${goalTarget('week','hours')} ساعة`:'', wT?wm/wT*100:null, wm>=wT&&wT?'var(--green)':'var(--accent)');
   const list=sessionsOn(tk).sort((x,y)=>x.start.localeCompare(y.start));
   document.getElementById('todaySessions').innerHTML=list.map(s=>{ const st=new Date(s.start), en=new Date(s.end); const ms=matchesInRange(st,en), w=ms.filter(m=>resultOf(m)==='W').length;
-    return `<div class="sess-item"><span>${stypeOf(s.type).icon}</span><span class="num">${pad2(st.getHours())}:${pad2(st.getMinutes())}–${pad2(en.getHours())}:${pad2(en.getMinutes())}</span><b>${hrsTxt(s.mins)}</b><span class="muted" style="flex:1">${ms.length?`${ms.length} مباراة · ${w} فوز`:''}</span><button class="btn danger" style="padding:2px 8px" onclick="deleteSession(${s.id})">✕</button></div>`; }).join('');
+    const icons=s.type==='mixed'||!s.type ? [...new Set(ms.map(m=>modeOf(m.mode).icon))].join('')||stypeOf(s.type).icon : stypeOf(s.type).icon;
+    return `<div class="sess-item"><span>${icons}</span><span class="num">${pad2(st.getHours())}:${pad2(st.getMinutes())}–${pad2(en.getHours())}:${pad2(en.getMinutes())}</span><b>${hrsTxt(s.mins)}</b><span class="muted" style="flex:1">${ms.length?`${ms.length} مباراة · ${w} فوز`:''}</span><button class="btn danger" style="padding:2px 8px" onclick="deleteSession(${s.id})">✕</button></div>`; }).join('');
   tickTimer();
 }
 function tickTimer(){
@@ -3385,8 +3389,10 @@ function tickTimer(){
   const g=document.getElementById('timerGames');
   if(g){ const ms=matchesInRange(new Date(a.start),new Date()), w=ms.filter(m=>resultOf(m)==='W').length; const h=activeElapsed()/36e5;
     const fp=ms.filter(m=>m.fcp&&m.fcp.delta!=null), fpd=sum(fp.map(m=>m.fcp.delta));
-    const fpTxt = a.type==='fcpro' ? (()=>{ const F=fpState(fpAutoLadder()); return `<br>🪜 النقاط: <b class="num">${F.rating??'—'}</b>${fp.length?` (هالجلسة <b class="num" style="color:${fpd>=0?'var(--green)':'#ff5c7a'}">${fpd>0?'+':''}${fpd}</b>)`:''}${F.cutoff&&F.rating!=null?` · باقي <b class="num">${Math.max(0,F.cutoff-F.rating)}</b> للحد`:''}`; })() : '';
-    g.innerHTML= (ms.length? `هالجلسة: <b class="num">${ms.length}</b> مباراة · <b class="num">${w}</b> فوز${h>=0.5?` · <span class="num">${(ms.length/h).toFixed(1)}</span> مباراة/ساعة`:''}` : 'سجّلي المباريات وهي شغّالة وتنحسب على الجلسة')+fpTxt; }
+    const byMode=MODES.map(md=>{ const x=ms.filter(m=>m.mode===md.id); return x.length?`${md.icon} <b class="num">${x.length}</b>${x.length?` <span class="muted">(${x.filter(m=>resultOf(m)==='W').length}ف)</span>`:''}`:''; }).filter(Boolean);
+    const modeTxt = byMode.length>1 ? `<br>${byMode.join(' · ')}` : '';
+    const fpTxt = (a.type==='fcpro' || fp.length) ? (()=>{ const F=fpState(fpAutoLadder()); return `<br>🪜 النقاط: <b class="num">${F.rating??'—'}</b>${fp.length?` (هالجلسة <b class="num" style="color:${fpd>=0?'var(--green)':'#ff5c7a'}">${fpd>0?'+':''}${fpd}</b>)`:''}${F.cutoff&&F.rating!=null?` · باقي <b class="num">${Math.max(0,F.cutoff-F.rating)}</b> للحد`:''}`; })() : '';
+    g.innerHTML= (ms.length? `هالجلسة: <b class="num">${ms.length}</b> مباراة · <b class="num">${w}</b> فوز${h>=0.5?` · <span class="num">${(ms.length/h).toFixed(1)}</span> مباراة/ساعة`:''}` : 'سجّلي المباريات وهي شغّالة وتنحسب على الجلسة — نوع كل مباراة ينحسب لحاله')+modeTxt+fpTxt; }
 }
 
 let extTabSel='shooting';
